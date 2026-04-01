@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #00CFFF;
+  --color-accent-hover: #00AACC;       
+  --color-accent-darker: #009FCC;
+}
+
+@layer base {
+  :root {
+    --bg-primary: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --text-primary: #1E293B;
+    --text-secondary: #64748B;
+    --border-divider: #E2E8F0;
+  }
+
+  .dark {
+    --bg-primary: #121212;
+    --bg-surface: #1E1E1E;
+    --text-primary: #FFFFFF;
+    --text-secondary: #AAAAAA;
+    --border-divider: #2A2A2A;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    @apply font-sans antialiased min-h-screen w-full overflow-x-hidden m-0;
+  }
+}
+
+@layer components {
+  /* Dynamic Surface/Card Container */
+  .theme-panel {
+    background-color: var(--bg-surface);
+    border-color: var(--border-divider);
+    @apply rounded-xl border transition-all duration-300;
+  }
+  
+  .dark .theme-panel {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  :root:not(.dark) .theme-panel {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Universal Input Geometry */
+  .theme-input {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--border-divider);
+    @apply w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-300;
+  }
+  
+  .theme-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.5;
+  }
+
+  /* Universal Action Call */
+  .theme-btn {
+    @apply w-full bg-accent hover:bg-accent-darker dark:hover:bg-accent-hover text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Universal Hyperlink Syntax */
+  .theme-link {
+    @apply text-accent hover:underline decoration-accent/50 underline-offset-4 transition-all duration-300 font-medium;
+  }
+}

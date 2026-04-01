@@ -1,0 +1,53 @@
+const express = require('express');
+const dotenv  = require('dotenv');
+const cors = require('cors');
+const useStudentRouter = require('./routes/student')
+const useMentroRouter = require('./routes/mentor')
+const authRouter = require('./routes/auth');
+const tasksRouter = require('./routes/tasks');
+const wellbeingRouter = require('./routes/wellbeing');
+const adminRouter = require('./routes/admin');
+const DataBaseConnection = require('./databseConnection')
+const { connectSQL } = require('./sqlConnection');
+const path = require("path");
+
+dotenv.config();
+
+const app = express();
+
+app.use(cors());
+app.use(express.json()); 
+
+DataBaseConnection();
+connectSQL();
+// app.use(express.urlencoded({ extended: true }));
+
+// app.get('/', (req, res) => {
+//   res.json({ msg: "Default backend for EduVantaAZ" })
+// })
+
+// app.get('/api/second', (req, res) => {
+//   res.json({ msg: "Second API working!" })
+// })
+
+app.use('/api/student', useStudentRouter);
+app.use('/api/mentor', useMentroRouter);
+
+// New unified REST endpoints
+app.use('/api/auth', authRouter);
+app.use('/api/tasks', tasksRouter);
+app.use('/api/wellbeing', wellbeingRouter);
+app.use('/api/admin', adminRouter);
+
+const PORT = process.env.PORT ;
+// const PORT = 2000;
+ 
+// Middleware 
+app.use((req, res, next) => {
+    console.log(req.path, req.method)
+});
+
+app.listen(PORT, () => {
+    console.log(process.env.PORT);
+    console.log(`App listen on http://localhost:${PORT}`);
+})
