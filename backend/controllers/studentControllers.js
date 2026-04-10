@@ -1,222 +1,103 @@
-const StudentModel = require('../models/student');
-const SubjectModel = require('../models/subject');
-const TargetModel = require('../models/target');
-const RecommendationModel = require('../models/recommendation');
-const TicketModel = require('../models/ticket');
-const StudySessionModel = require('../models/studySession');
-const ActivityLogModel = require('../models/activityLog');
-const { sequelize } = require('../sqlConnection');
-// const bcrypt = require('bcrypt');
+const Student        = require('../models/sql/Student');
+const Subject        = require('../models/sql/Subject');
+const Target         = require('../models/sql/Target');
+const Recommendation = require('../models/sql/Recommendation');
+const Ticket         = require('../models/sql/Ticket');
+const StudySession   = require('../models/sql/StudySession');
+const ActivityLog    = require('../models/sql/ActivityLog');
+const { sequelize }  = require('../sqlConnection');
+const { Op }         = require('sequelize');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 
-const createToken = (_id) => {
-    return jwt.sign({ _id }, process.env.SECRET, { expiresIn: '3d' });
+const createToken = (id) => {
+    return jwt.sign({ _id: id }, process.env.SECRET, { expiresIn: '3d' });
 }
 
 exports.studentDetials = (req, res) => {
-    res.status(200).json({
-        msg: `Deafult page for student`
-    })
+    res.status(200).json({ msg: `Default page for student` });
 }
 
 exports.login = async (req, res) => {
-
     let { email, password } = req.body;
 
     if (!password || !email) {
-        res.status(400).json({
-            msg: 'Fill all mindatory field'
-        })
+        return res.status(400).json({ msg: 'Fill all mandatory field' });
     }
 
-    if(!validator.isEmail(email)){
-        throw Error("Invalid email");
+    if (!validator.isEmail(email)) {
+        return res.status(400).json({ error: "Invalid email" });
     }
 
     try {
-
-        // 2️⃣ Check if user already exists
-        const existingUser = await StudentModel.findOne({ email });
-
+        const existingUser = await Student.findOne({ where: { email } });
         if (!existingUser) {
-            throw Error('Email not registered')
+            return res.status(400).json({ error: 'Email not registered' });
         }
 
+        const student = await Student.login({ email, password });
+        const token = createToken(student.id);
 
-        const student = await StudentModel.login({email, password});
-
-        const token = createToken(student._id);
-
-        return res.status(200).json({
-            email, password, token
-        })
-
+        return res.status(200).json({ email, token });
     } catch (error) {
-        return res.status(400).json({
-            error: error.message
-        })
+        return res.status(400).json({ error: error.message });
     }
-
 }
-
 
 exports.isExist = async (req, res) => {
     const { email } = req.body;
-    console.log(req.body);
-
     try {
-        if (!email) {
-            throw Error('Enter email properly..')
-        }
-
-        const existingUser = await StudentModel.findOne({ email });
-
-        if (existingUser) {
-            throw Error('Email already registered')
-        }
-
-        return res.status(200).json({
-            msg: 'Email not registered'
-        })
-
+        if (!email) throw Error('Enter email properly..');
+        const existingUser = await Student.findOne({ where: { email } });
+        if (existingUser) throw Error('Email already registered');
+        return res.status(200).json({ msg: 'Email not registered' });
     } catch (error) {
-        return res.status(400).json({
-            error: error.message
-        })
+        return res.status(400).json({ error: error.message });
     }
 }
 
-
 exports.signup = async (req, res) => {
-    const {
-            fullName,
-            email,
-            phone,
-            password,
-            gender,
-            dob,
-            enrollment,
-            course,
-            semester,
-            state,
-            district,
-            area
-        } = req.body;
+    const { fullName, email, phone, password, gender, dob, enrollment, rollno, course, semester, state, district, area } = req.body;
 
     try {
-        
-        // // 1️⃣ Check if passwords match
-        // if (password !== conformPassword) {
-        //     return res.status(400).json({
-        //         message: "Passwords do not match"
-        //     });
-        // }
-
-        // 2️⃣ Check if user already exists
-        // const existingUser = await StudentModel.findOne({ email });
-
-        // if (existingUser) {
-        //     return res.status(400).json({
-        //         message: "Email already registered"
-        //     });
-        // }
-
-        //  if(!fullName){
-        //     console.log("No newStudent");
-        // }else{
-        //     console.log("newStudent")
-        // }
-
-        // 4️⃣ Create user
-        // const newStudent1 = await StudentModel.create({
-        //     fullName,
-        //     email,
-        //     phone,
-        //     password,
-        //     gender,
-        //     dob,
-        //     enrollment,
-        //     course,
-        //     semester,
-        //     state,
-        //     district,
-        //     area
-        // });
-
-        const newStudent = await StudentModel.signup({
-            fullName,
-            email,
-            phone,
-            password,
-            gender,
-            dob,
-            enrollment,
-            course,
-            semester,
-            state,
-            district,
-            area
+        const newStudent = await Student.signup({
+            fullName, email, phone, password, gender, dob, enrollment, rollno, course, semester, state, district, area
         });
 
-        const token = createToken(newStudent._id);
-       
+        const token = createToken(newStudent.id);
 
-        // 5️⃣ Send response (without password)
-        res.status(201).json({
-            email: newStudent.email,
-            password: newStudent.password,
-            token
-        });
-
+        res.status(201).json({ email: newStudent.email, token });
     } catch (error) {
-        res.status(500).json({
-            message: "Database error",
-            error: error.message
-        });
+        res.status(500).json({ message: "Database error", error: error.message });
     }
 };
 
 exports.profile = async (req, res) => {
-    const { email } = req.body
-    console.log(req.body);
-
+    const { email } = req.body;
     try {
-        if (!email) {
-            throw Error("Invaild email");
-        }
-
-        const student = await StudentModel.findOne({ email });
-
-        if(!student){
-            throw Error("Student not register");
-        }
-
-        return res.status(200).json({
-            student
-        })
-
+        if (!email) throw Error("Invalid email");
+        const student = await Student.findOne({ where: { email } });
+        if (!student) throw Error("Student not registered");
+        return res.status(200).json({ student });
     } catch (error) {
-        return res.status(400).json({
-            error: error.message
-        })
+        return res.status(400).json({ error: error.message });
     }
 }
 
-// ─── 1. Academic Performance Data (SQL + Mongo) ──────────────────────────────
+// ─── 1. Academic Performance Data (All from SQL) ─────────────────────────────
 exports.getMyData = async (req, res) => {
     try {
-        const student = await StudentModel.findById(req.user._id);
+        const student = await Student.findByPk(req.user._id);
         if (!student) return res.status(404).json({ error: 'Identity not found.' });
 
-        // Step 1: Find all subjects mathematically matching the student's program string
-        // We use regex to handle any casing issues
-        const enrolledSubjects = await SubjectModel.find({ 
-            courseName: new RegExp(student.course, 'i'), 
-            semester: student.semester 
+        // Find all subjects matching the student's program
+        const enrolledSubjects = await Subject.findAll({
+            where: {
+                courseName: { [Op.like]: `%${student.course}%` },
+                semester: student.semester
+            }
         });
 
-        // Step 2: Iterate and query the active SQL database marks natively
         let performanceData = [];
         
         for (let sub of enrolledSubjects) {
@@ -224,7 +105,6 @@ exports.getMyData = async (req, res) => {
             const tableName = `marks_${safeName}`;
 
             try {
-                // Verify table exists smoothly without crashing
                 const [tableExists] = await sequelize.query(`SHOW TABLES LIKE '${tableName}'`);
                 if (tableExists.length > 0) {
                     const [sqlRecord] = await sequelize.query(
@@ -233,7 +113,12 @@ exports.getMyData = async (req, res) => {
                     );
 
                     performanceData.push({
-                        ...sub.toObject(),
+                        subjectName: sub.subjectName,
+                        subjectId: sub.subjectId,
+                        courseName: sub.courseName,
+                        semester: sub.semester,
+                        year: sub.year,
+                        department: sub.department,
                         sqlMark: sqlRecord.length > 0 ? sqlRecord[0].marks : 0,
                         sqlGrade: sqlRecord.length > 0 ? sqlRecord[0].grade : 'N/A',
                         attendancePct: sqlRecord.length > 0 ? (sqlRecord[0].attendance || 0) : 0
@@ -251,7 +136,10 @@ exports.getMyData = async (req, res) => {
 // ─── 2. Target Interactions ──────────────────────────────────────────────────
 exports.getTargets = async (req, res) => {
     try {
-        const targets = await TargetModel.find({ studentId: req.user._id }).sort({ createdAt: -1 });
+        const targets = await Target.findAll({
+            where: { studentId: req.user._id },
+            order: [['created_at', 'DESC']]
+        });
         res.status(200).json(targets);
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
@@ -260,21 +148,24 @@ exports.updateTargetProgress = async (req, res) => {
     const { id } = req.params;
     const { currentProgress, status } = req.body;
     try {
-        const updated = await TargetModel.findOneAndUpdate(
-            { _id: id, studentId: req.user._id },
+        const [updated] = await Target.update(
             { currentProgress, status },
-            { new: true }
+            { where: { id, studentId: req.user._id } }
         );
 
+        if (!updated) return res.status(404).json({ error: 'Target not found.' });
+
+        const target = await Target.findByPk(id);
+
         if (status === 'completed') {
-            await ActivityLogModel.create({
+            await ActivityLog.create({
                 studentId: req.user._id,
                 actionType: 'TARGET_UPDATE',
-                description: `Successfully completed Goal Array object: ${updated.title}`
+                description: `Successfully completed Goal Array object: ${target.title}`
             });
         }
 
-        res.status(200).json(updated);
+        res.status(200).json(target);
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
@@ -282,12 +173,11 @@ exports.updateTargetProgress = async (req, res) => {
 exports.logSession = async (req, res) => {
     const { subjectId, durationInSeconds, distractionsLogged } = req.body;
     try {
-        const session = await StudySessionModel.create({
+        const session = await StudySession.create({
             studentId: req.user._id, subjectId, durationInSeconds, distractionsLogged
         });
         
-        // Push transparent privacy string
-        await ActivityLogModel.create({
+        await ActivityLog.create({
             studentId: req.user._id,
             actionType: 'STUDY_SESSION_COMPLETED',
             description: `Clocked ${Math.round(durationInSeconds/60)} minute deep-work interval for node [${subjectId}]`
@@ -299,7 +189,11 @@ exports.logSession = async (req, res) => {
 
 exports.getActivityLogs = async (req, res) => {
     try {
-        const logs = await ActivityLogModel.find({ studentId: req.user._id }).sort({ createdAt: -1 }).limit(20);
+        const logs = await ActivityLog.findAll({
+            where: { studentId: req.user._id },
+            order: [['created_at', 'DESC']],
+            limit: 20
+        });
         res.status(200).json(logs);
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
@@ -307,12 +201,13 @@ exports.getActivityLogs = async (req, res) => {
 // ─── 4. ML Validation Display ────────────────────────────────────────────────
 exports.getRecommendations = async (req, res) => {
     try {
-        // Students exclusively see verified schemas!
-        const recs = await RecommendationModel.find({ 
-            studentId: req.user._id,
-            status: { $in: ['approved', 'refined'] }
-        }).sort({ updatedAt: -1 });
-
+        const recs = await Recommendation.findAll({
+            where: {
+                studentId: req.user._id,
+                status: { [Op.in]: ['approved', 'refined'] }
+            },
+            order: [['updated_at', 'DESC']]
+        });
         res.status(200).json(recs);
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
@@ -320,7 +215,10 @@ exports.getRecommendations = async (req, res) => {
 // ─── 5. Comms Routing ────────────────────────────────────────────────────────
 exports.getTickets = async (req, res) => {
     try {
-        const tickets = await TicketModel.find({ studentId: req.user._id }).sort({ createdAt: -1 });
+        const tickets = await Ticket.findAll({
+            where: { studentId: req.user._id },
+            order: [['created_at', 'DESC']]
+        });
         res.status(200).json(tickets);
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
@@ -328,13 +226,12 @@ exports.getTickets = async (req, res) => {
 exports.createTicket = async (req, res) => {
     const { subjectId, query, mentorId } = req.body;
     try {
-        // Automatically assume the admin mapped 'Staff' logic over but allow explicit mapping
-        const t = await TicketModel.create({
+        const t = await Ticket.create({
             studentId: req.user._id,
             subjectId, mentorId, query, status: 'open'
         });
         
-        await ActivityLogModel.create({
+        await ActivityLog.create({
            studentId: req.user._id,
            actionType: 'DOUBT_LOGGED',
            description: `Requested remote resolution mapping via Subject Code [${subjectId}]`
@@ -342,4 +239,4 @@ exports.createTicket = async (req, res) => {
         
         res.status(201).json(t);
     } catch (err) { res.status(500).json({ error: err.message }); }
-};
+};

@@ -1,4 +1,4 @@
-const Wellbeing = require('../models/wellbeing');
+const Wellbeing = require('../models/sql/Wellbeing');
 
 exports.saveWellbeingStatus = async (req, res) => {
     const { stress_level, sentiment_note } = req.body;
@@ -6,9 +6,9 @@ exports.saveWellbeingStatus = async (req, res) => {
 
     try {
         const newStatus = await Wellbeing.create({
-            user_id,
-            stress_level: Number(stress_level),
-            sentiment_note
+            userId: user_id,
+            stressLevel: Number(stress_level),
+            sentimentNote: sentiment_note
         });
 
         res.status(201).json({ msg: "Wellbeing status saved", status: newStatus });
@@ -21,7 +21,10 @@ exports.getWellbeingStatus = async (req, res) => {
     const user_id = req.user._id;
 
     try {
-        const statuses = await Wellbeing.find({ user_id }).sort({ date: -1 });
+        const statuses = await Wellbeing.findAll({
+            where: { userId: user_id },
+            order: [['date', 'DESC']]
+        });
         res.status(200).json(statuses);
     } catch (error) {
         res.status(400).json({ error: error.message });

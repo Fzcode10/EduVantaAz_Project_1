@@ -1,50 +1,51 @@
-const StudentModel = require('../models/student');
-const StaffModel   = require('../models/staff');
-const TargetModel  = require('../models/target');
-const RecommendationModel = require('../models/recommendation');
-const TicketModel  = require('../models/ticket');
-const { sequelize } = require('../sqlConnection');
+const Student              = require('../models/sql/Student');
+const Staff                = require('../models/sql/Staff');
+const StaffAssignedSubject = require('../models/sql/StaffAssignedSubject');
+const Target               = require('../models/sql/Target');
+const Recommendation       = require('../models/sql/Recommendation');
+const Ticket               = require('../models/sql/Ticket');
+const Material             = require('../models/sql/Material');
+const { sequelize }        = require('../sqlConnection');
 
 // ─── Get Mentor's Assigned Subjects ──────────────────────────────────────────
-// Returns the assignedSubjects array from the logged-in mentor's StaffModel doc
 exports.getMySubjects = async (req, res) => {
     try {
-        const mentor = await StaffModel.findById(req.user._id).select('assignedSubjects fullName');
-        if (!mentor) return res.status(404).json({ error: 'Mentor not found.' });
-        res.status(200).json(mentor.assignedSubjects || []);
+        const subjects = await StaffAssignedSubject.findAll({
+            where: { staffId: req.user._id }
+        });
+        res.status(200).json(subjects || []);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Get All Students (for Marks Entry roster) ────────────────────────────────
+// ─── Get All Students (for Marks Entry roster) ──────────────────────────────
 exports.getStudents = async (req, res) => {
     try {
-        // Fetch strictly what is needed for the Roster table securely
-        const students = await StudentModel.find({}).select('fullName enrollment rollno course semester');
+        const students = await Student.findAll({
+            attributes: ['id', 'fullName', 'enrollment', 'rollno', 'course', 'semester']
+        });
         res.status(200).json(students);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Save Marks to SQL Table ──────────────────────────────────────────────────
+// ─── Save Marks to SQL Table ─────────────────────────────────────────────────
 exports.saveMarks = async (req, res) => {
-    const { subject_name, marksData } = req.body; 
+    const { subject_id, marksData } = req.body;
     try {
-        let safeName = subject_name.replace(/[^a-z0-9]/gi, '_').toLowerCase().replace(/__+/g, '_');
+        let safeName = subject_id.replace(/[^a-z0-9]/gi, '_').toLowerCase().replace(/__+/g, '_');
         const tableName = `marks_${safeName}`;
 
-        // Ensure attendance column exists (for tables created before this migration)
-        try { await sequelize.query(`ALTER TABLE ${tableName} ADD COLUMN attendance INT DEFAULT 0`); } catch(e) { /* column already exists */ }
+        // Ensure attendance column exists (for tables created before migration)
+        try { await sequelize.query(`ALTER TABLE ${tableName} ADD COLUMN attendance INT DEFAULT 0`); } catch(e) { /* already exists */ }
 
         const enrollments = marksData.map(m => `'${m.enrollment_id}'`).join(',');
         
         if (enrollments.length > 0) {
-            // Delete existing records for these students to natively execute a clean UPSERT
             await sequelize.query(`DELETE FROM ${tableName} WHERE enrollment_id IN (${enrollments})`);
             
-            // Re-insert pristine data with attendance
             for (let data of marksData) {
                 await sequelize.query(`
                   INSERT INTO ${tableName} (enrollment_id, rollno, marks, grade, attendance, remarks)
@@ -71,15 +72,14 @@ exports.getSubjectMarks = async (req, res) => {
     }
 };
 
-// ─── Save Attendance to SQL Marks Table ───────────────────────────────────────
+// ─── Save Attendance to SQL Marks Table ──────────────────────────────────────
 exports.saveAttendance = async (req, res) => {
     const { subjectId, enrollmentId, attendancePercentage } = req.body;
     try {
         let safeName = subjectId.replace(/[^a-z0-9]/gi, '_').toLowerCase().replace(/__+/g, '_');
         const tableName = `marks_${safeName}`;
 
-        // Ensure attendance column exists (for tables created before this migration)
-        try { await sequelize.query(`ALTER TABLE ${tableName} ADD COLUMN attendance INT DEFAULT 0`); } catch(e) { /* column already exists */ }
+        try { await sequelize.query(`ALTER TABLE ${tableName} ADD COLUMN attendance INT DEFAULT 0`); } catch(e) { /* already exists */ }
 
         await sequelize.query(
             `UPDATE ${tableName} SET attendance = ? WHERE enrollment_id = ?`,
@@ -91,23 +91,24 @@ exports.saveAttendance = async (req, res) => {
     }
 };
 
-// ─── Phase 4: Extended Analytics ─────────────────────────────────────────────
+// ─── Analytics ───────────────────────────────────────────────────────────────
 exports.getAnalytics = async (req, res) => {
     const { subjectId } = req.params;
     try {
         let safeName = subjectId.replace(/[^a-z0-9]/gi, '_').toLowerCase().replace(/__+/g, '_');
         const [sqlMarks] = await sequelize.query(`SELECT * FROM marks_${safeName}`);
 
-        // Extract student enrollments
         const enrollments = sqlMarks.map(m => m.enrollment_id);
-        const students = await StudentModel.find({ enrollment: { $in: enrollments } }).select('fullName enrollment rollno');
+        const students = await Student.findAll({
+            where: { enrollment: enrollments },
+            attributes: ['id', 'fullName', 'enrollment', 'rollno']
+        });
 
-        // Merge MongoDB student profiles with SQL numbers (marks + attendance now both from SQL)
         const mergedData = sqlMarks.map(mark => {
             const student = students.find(s => s.enrollment === mark.enrollment_id);
             return {
                 ...mark,
-                student_obj_id: student ? student._id : null,
+                student_obj_id: student ? student.id : null,
                 fullName: student ? student.fullName : 'Unknown Identity',
                 attendancePct: mark.attendance || 0
             };
@@ -119,11 +120,11 @@ exports.getAnalytics = async (req, res) => {
     }
 };
 
-// ─── Phase 5: Targets & Goals ────────────────────────────────────────────────
+// ─── Targets & Goals ─────────────────────────────────────────────────────────
 exports.createTarget = async (req, res) => {
     try {
         const { studentId, subjectId, title, description, targetMetric, deadline } = req.body;
-        const target = await TargetModel.create({
+        const target = await Target.create({
             mentorId: req.user._id,
             studentId, subjectId, title, description, targetMetric, deadline
         });
@@ -135,19 +136,23 @@ exports.createTarget = async (req, res) => {
 
 exports.getTargets = async (req, res) => {
     try {
-        const targets = await TargetModel.find({ mentorId: req.user._id, subjectId: req.params.subjectId })
-                                         .populate('studentId', 'fullName enrollment');
+        const targets = await Target.findAll({
+            where: { mentorId: req.user._id, subjectId: req.params.subjectId },
+            include: [{ model: Student, as: 'student', attributes: ['fullName', 'enrollment'] }]
+        });
         res.status(200).json(targets);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Phase 6: ML Feed Recommendations ────────────────────────────────────────
+// ─── ML Feed Recommendations ────────────────────────────────────────────────
 exports.getRecommendations = async (req, res) => {
     try {
-        const recs = await RecommendationModel.find({ subjectId: req.params.subjectId })
-                                              .populate('studentId', 'fullName enrollment');
+        const recs = await Recommendation.findAll({
+            where: { subjectId: req.params.subjectId },
+            include: [{ model: Student, as: 'student', attributes: ['fullName', 'enrollment'] }]
+        });
         res.status(200).json(recs);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -156,24 +161,26 @@ exports.getRecommendations = async (req, res) => {
 
 exports.verifyRecommendation = async (req, res) => {
     const { id } = req.params;
-    const { status, refinedText } = req.body; // status: 'approved' or 'refined'
+    const { status, refinedText } = req.body;
     try {
-        const rec = await RecommendationModel.findByIdAndUpdate(
-            id, 
+        await Recommendation.update(
             { status, refinedText, feedbackGiven: true },
-            { new: true }
+            { where: { id } }
         );
+        const rec = await Recommendation.findByPk(id);
         res.status(200).json({ msg: "Edge Feedback loop verified.", rec });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Phase 6: Ticket Management ─────────────────────────────────────────────
+// ─── Ticket Management ──────────────────────────────────────────────────────
 exports.getTickets = async (req, res) => {
     try {
-        const tickets = await TicketModel.find({ subjectId: req.params.subjectId })
-                                         .populate('studentId', 'fullName enrollment');
+        const tickets = await Ticket.findAll({
+            where: { subjectId: req.params.subjectId },
+            include: [{ model: Student, as: 'student', attributes: ['fullName', 'enrollment'] }]
+        });
         res.status(200).json(tickets);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -184,12 +191,38 @@ exports.resolveTicket = async (req, res) => {
     const { id } = req.params;
     const { response } = req.body;
     try {
-        const ticket = await TicketModel.findByIdAndUpdate(
-            id, 
+        await Ticket.update(
             { status: 'resolved', response },
-            { new: true }
+            { where: { id } }
         );
+        const ticket = await Ticket.findByPk(id);
         res.status(200).json({ msg: "Student Doubt Ticket Closed.", ticket });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// ─── Materials Upload ────────────────────────────────────────────────────────
+exports.uploadMaterial = async (req, res) => {
+    const { subjectId, title, fileType, filePath, fileSize } = req.body;
+    try {
+        const material = await Material.create({
+            mentorId: req.user._id,
+            subjectId, title, fileType, filePath, fileSize
+        });
+        res.status(201).json({ msg: "Material uploaded.", material });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getMaterials = async (req, res) => {
+    try {
+        const materials = await Material.findAll({
+            where: { subjectId: req.params.subjectId },
+            order: [['created_at', 'DESC']]
+        });
+        res.status(200).json(materials);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { 
   BookOpen, ArrowRight, Database, Target, Cpu, MessageSquare,
-  Activity, CheckCircle, Clock, AlertTriangle, Upload, Play, Edit, Check
+  Activity, CheckCircle, Clock, AlertTriangle, Upload, Play, Edit, Check, User
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -31,7 +31,7 @@ export default function MentorDashboard() {
   const fetchMySubjects = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      const res = await axios.get('http://localhost:2000/api/mentor/my-subjects', config);
+      const res = await axios.get('/api/mentor/my-subjects', config);
       setSubjects(res.data);
       if (res.data.length > 0) {
         setSelectedSubject(res.data[0].subjectId);
@@ -46,16 +46,16 @@ export default function MentorDashboard() {
       
       // Fetch relevant data based on active tab to save network
       if (activeTab === 'analytics') {
-         const res = await axios.get(`http://localhost:2000/api/mentor/analytics/${selectedSubject}`, config);
+         const res = await axios.get(`/api/mentor/analytics/${selectedSubject}`, config);
          setAnalytics(res.data);
       } else if (activeTab === 'targets') {
-         const res = await axios.get(`http://localhost:2000/api/mentor/targets/${selectedSubject}`, config);
+         const res = await axios.get(`/api/mentor/targets/${selectedSubject}`, config);
          setTargets(res.data);
       } else if (activeTab === 'ml') {
-         const res = await axios.get(`http://localhost:2000/api/mentor/recommendations/${selectedSubject}`, config);
+         const res = await axios.get(`/api/mentor/recommendations/${selectedSubject}`, config);
          setRecommendations(res.data);
       } else if (activeTab === 'comms') {
-         const res = await axios.get(`http://localhost:2000/api/mentor/tickets/${selectedSubject}`, config);
+         const res = await axios.get(`/api/mentor/tickets/${selectedSubject}`, config);
          setTickets(res.data);
       }
     } catch (err) { console.error("Tab fetch failed: ", err); }
@@ -79,7 +79,7 @@ export default function MentorDashboard() {
     e.preventDefault();
     try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await axios.post('http://localhost:2000/api/mentor/targets', { ...newTarget, subjectId: selectedSubject }, config);
+        await axios.post('/api/mentor/targets', { ...newTarget, subjectId: selectedSubject }, config);
         showStatus('success', 'Goal Assigned to Student');
         setNewTarget({ studentId: '', title: '', description: '', targetMetric: 100, deadline: '' });
         fetchTabData();
@@ -89,7 +89,7 @@ export default function MentorDashboard() {
   const verifyRec = async (id, status, text) => {
     try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await axios.put(`http://localhost:2000/api/mentor/recommendations/${id}/verify`, { status, refinedText: text }, config);
+        await axios.put(`/api/mentor/recommendations/${id}/verify`, { status, refinedText: text }, config);
         showStatus('success', 'FL Node verified & Updated.');
         fetchTabData();
     } catch (err) { showStatus('error', err.response?.data?.error); }
@@ -99,7 +99,7 @@ export default function MentorDashboard() {
     if (!pct || pct < 0 || pct > 100) return showStatus('error', 'Attendance must be 0-100.');
     try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await axios.post(`http://localhost:2000/api/mentor/attendance`, { subjectId: selectedSubject, enrollmentId, attendancePercentage: pct }, config);
+        await axios.post(`/api/mentor/attendance`, { subjectId: selectedSubject, enrollmentId, attendancePercentage: pct }, config);
         showStatus('success', 'Attendance updated in SQL.');
         fetchTabData();
     } catch (err) { showStatus('error', err.response?.data?.error); }
@@ -108,7 +108,7 @@ export default function MentorDashboard() {
   const resolveTicket = async (id, responseText) => {
     try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await axios.put(`http://localhost:2000/api/mentor/tickets/${id}`, { response: responseText }, config);
+        await axios.put(`/api/mentor/tickets/${id}`, { response: responseText }, config);
         showStatus('success', 'Doubt Ticket Closed.');
         fetchTabData();
     } catch (err) { showStatus('error', err.response?.data?.error); }
@@ -231,12 +231,12 @@ export default function MentorDashboard() {
                           const isOverdue = new Date(t.deadline) < new Date() && t.status !== 'completed';
                           const pct = Math.min((t.currentProgress / t.targetMetric) * 100, 100);
                           return (
-                              <div key={t._id} className={`p-4 border rounded-xl ${isOverdue ? 'border-red-500/50 bg-red-500/5' : 'border-[var(--border-divider)] bg-[var(--bg-secondary)]'}`}>
+                              <div key={t.id} className={`p-4 border rounded-xl ${isOverdue ? 'border-red-500/50 bg-red-500/5' : 'border-[var(--border-divider)] bg-[var(--bg-secondary)]'}`}>
                                   <div className="flex justify-between mb-2">
                                       <h4 className="font-bold flex items-center gap-2">{t.title} {isOverdue && <Clock size={14} className="text-red-500"/>}</h4>
                                       <span className="text-sm font-mono">{t.currentProgress} / {t.targetMetric}</span>
                                   </div>
-                                  <p className="text-xs text-[var(--text-secondary)] mb-3">Student Target: {t.studentId?.fullName || t.studentId}</p>
+                                  <p className="text-xs text-[var(--text-secondary)] mb-3">Student Target: {t.student?.fullName || 'N/A'}</p>
                                   {/* Tailwind Visual Progress Bar */}
                                   <div className="w-full bg-[var(--bg-primary)] rounded-full h-2.5 overflow-hidden">
                                       <div className={`h-2.5 rounded-full ${isOverdue ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }}></div>
@@ -269,17 +269,17 @@ export default function MentorDashboard() {
                       }} className="block mx-auto mt-4 underline text-purple-500 italic">Simulate Mock Packet (Dev)</button>
                   </div>
               ) : recommendations.map(r => (
-                  <div key={r._id} className="theme-panel p-6 shadow-md border-l-4 border-l-purple-500 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                  <div key={r.id} className="theme-panel p-6 shadow-md border-l-4 border-l-purple-500 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
                       <div className="flex-1">
                           <p className="text-xs text-purple-500 font-bold mb-1 tracking-wider">RECEIVED FEDERATED PREDICTION</p>
-                          <h4 className="text-lg font-bold">{r.studentId?.fullName || "Student Node"}</h4>
+                          <h4 className="text-lg font-bold">{r.student?.fullName || "Student Node"}</h4>
                           <p className="mt-2 text-sm italic border-l-2 border-[var(--border-divider)] pl-4">"{r.refinedText || r.predictionText}"</p>
                           {r.feedbackGiven && <span className="inline-block mt-3 px-2 py-1 bg-green-500/20 text-green-600 text-xs rounded-full uppercase font-bold tracking-widest"><Check size={12} className="inline mr-1"/> Validated by Logic</span>}
                       </div>
 
                       <div className="flex gap-2 w-full md:w-auto mt-4 md:mt-0">
-                          <button onClick={() => verifyRec(r._id, 'refined', prompt("Enter refined text block:", r.predictionText))} className="theme-btn bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--border-divider)] border border-[var(--border-divider)]"><Edit size={16} className="inline mr-1"/> Refine Model</button>
-                          <button onClick={() => verifyRec(r._id, 'approved', r.predictionText)} className="theme-btn bg-purple-600 shadow-purple-600/20 hover:bg-purple-700 shadow-md">Approve Node</button>
+                          <button onClick={() => verifyRec(r.id, 'refined', prompt("Enter refined text block:", r.predictionText))} className="theme-btn bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--border-divider)] border border-[var(--border-divider)]"><Edit size={16} className="inline mr-1"/> Refine Model</button>
+                          <button onClick={() => verifyRec(r.id, 'approved', r.predictionText)} className="theme-btn bg-purple-600 shadow-purple-600/20 hover:bg-purple-700 shadow-md">Approve Node</button>
                       </div>
                   </div>
               ))}
@@ -309,17 +309,17 @@ export default function MentorDashboard() {
               
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                   {tickets.length === 0 ? <div className="h-full flex items-center justify-center text-[var(--text-secondary)] text-sm italic">Comm link idle. Open matrix.</div> : tickets.map(t => (
-                      <div key={t._id} className="p-4 bg-[var(--bg-surface)] border border-[var(--border-divider)] rounded-lg shadow-sm">
+                      <div key={t.id} className="p-4 bg-[var(--bg-surface)] border border-[var(--border-divider)] rounded-lg shadow-sm">
                           <div className="flex justify-between items-start mb-2">
-                             <span className="text-xs font-bold text-orange-500">{t.studentId?.fullName}</span>
+                             <span className="text-xs font-bold text-orange-500">{t.student?.fullName}</span>
                              <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full ${t.status==='resolved'?'bg-green-500/20 text-green-500':'bg-orange-500/20 text-orange-500'}`}>{t.status}</span>
                           </div>
                           <p className="text-sm border-l-2 border-[var(--border-divider)] pl-3 mb-3">{t.query}</p>
                           
                           {t.status === 'open' ? (
                               <div className="flex gap-2 mt-3 pt-3 border-t border-[var(--border-divider)]">
-                                  <input type="text" id={`res_${t._id}`} placeholder="Write a resolution response..." className="theme-input text-xs flex-1" />
-                                  <button onClick={() => resolveTicket(t._id, document.getElementById(`res_${t._id}`).value)} className="px-3 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600">Resolve</button>
+                                  <input type="text" id={`res_${t.id}`} placeholder="Write a resolution response..." className="theme-input text-xs flex-1" />
+                                  <button onClick={() => resolveTicket(t.id, document.getElementById(`res_${t.id}`).value)} className="px-3 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600">Resolve</button>
                               </div>
                           ) : (
                               <div className="bg-[var(--bg-primary)] p-2 rounded text-xs text-[var(--text-secondary)] font-mono">

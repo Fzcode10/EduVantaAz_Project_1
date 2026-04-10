@@ -34,11 +34,11 @@ export default function StudentDashboard() {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       const [perfRes, targRes, recRes, logsRes, tickRes] = await Promise.all([
-        axios.get('http://localhost:2000/api/student/my-data', config),
-        axios.get('http://localhost:2000/api/student/targets', config),
-        axios.get('http://localhost:2000/api/student/recommendations', config),
-        axios.get('http://localhost:2000/api/student/activity-logs', config),
-        axios.get('http://localhost:2000/api/student/tickets', config)
+        axios.get('/api/student/my-data', config),
+        axios.get('/api/student/targets', config),
+        axios.get('/api/student/recommendations', config),
+        axios.get('/api/student/activity-logs', config),
+        axios.get('/api/student/tickets', config)
       ]);
       setPerformance(perfRes.data);
       setTargets(targRes.data);
@@ -98,7 +98,7 @@ export default function StudentDashboard() {
           clearInterval(timerRef.current);
           try {
              const config = { headers: { Authorization: `Bearer ${user.token}` } };
-             await axios.post('http://localhost:2000/api/student/study-session', {
+             await axios.post('/api/student/study-session', {
                  subjectId: timerSubject, durationInSeconds: timePassed, distractionsLogged: distractions
              }, config);
              showStatus('success', `Truth Session securely transmitted: ${Math.round(timePassed/60)}m active.`);
@@ -121,7 +121,7 @@ export default function StudentDashboard() {
 
       try {
           const config = { headers: { Authorization: `Bearer ${user.token}` } };
-          await axios.put(`http://localhost:2000/api/student/targets/${targetId}`, { currentProgress, status }, config);
+          await axios.put(`/api/student/targets/${targetId}`, { currentProgress, status }, config);
           fetchData();
       } catch (err) { console.error(err); }
   };
@@ -131,7 +131,7 @@ export default function StudentDashboard() {
       e.preventDefault();
       try {
           const config = { headers: { Authorization: `Bearer ${user.token}` } };
-          await axios.post('http://localhost:2000/api/student/tickets', newTicket, config);
+          await axios.post('/api/student/tickets', newTicket, config);
           showStatus('success', 'Doubt securely lodged natively with active Mentor constraints.');
           setNewTicket({ subjectId: '', query: '' });
           fetchData();
@@ -192,7 +192,7 @@ export default function StudentDashboard() {
                    
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        {targets.length === 0 ? <p className="text-[var(--text-secondary)] italic">No active structural vectors designated.</p> : targets.map(t => (
-                           <div key={t._id} className={`p-5 rounded-xl border transition-colors ${t.status === 'completed' ? 'bg-green-500/10 border-green-500/30' : 'bg-[var(--bg-primary)] border-[var(--border-divider)]'}`}>
+                           <div key={t.id} className={`p-5 rounded-xl border transition-colors ${t.status === 'completed' ? 'bg-green-500/10 border-green-500/30' : 'bg-[var(--bg-primary)] border-[var(--border-divider)]'}`}>
                                <div className="flex justify-between items-start mb-2">
                                    <h3 className="font-bold text-lg leading-tight">{t.title}</h3>
                                    <span className={`text-xs px-2 py-1 rounded uppercase tracking-wider ${t.status === 'completed' ? 'bg-green-500/20 text-green-500' : 'bg-teal-500/20 text-teal-500'}`}>{t.status}</span>
@@ -205,13 +205,13 @@ export default function StudentDashboard() {
                                    min="0" max={t.targetMetric} 
                                    value={t.currentProgress} 
                                    disabled={t.status === 'completed'}
-                                   onChange={(e) => handleTargetUpdate(t._id, Number(e.target.value), t.targetMetric, false)}
+                                   onChange={(e) => handleTargetUpdate(t.id, Number(e.target.value), t.targetMetric, false)}
                                    className="w-full h-2 bg-[var(--bg-secondary)] rounded-lg appearance-none cursor-pointer accent-teal-500 mb-4"
                                />
                                
                                {t.status !== 'completed' && (
                                    <button 
-                                      onClick={() => handleTargetUpdate(t._id, t.targetMetric, t.targetMetric, true)}
+                                      onClick={() => handleTargetUpdate(t.id, t.targetMetric, t.targetMetric, true)}
                                       className="text-xs w-full py-2 bg-[var(--bg-secondary)] hover:bg-teal-500 hover:text-white transition-colors rounded border border-[var(--border-divider)] font-bold">
                                       Flag Global Completion
                                    </button>
@@ -237,7 +237,7 @@ export default function StudentDashboard() {
                        <div className="flex-1 space-y-3 h-48 overflow-y-auto pr-2">
                            <h3 className="text-sm font-bold border-b pb-2 mb-2">Previous Uplinks</h3>
                            {tickets.length === 0 ? <p className="text-xs italic opacity-50">Local matrix silent.</p> : tickets.map(t => (
-                               <div key={t._id} className="p-3 bg-[var(--bg-secondary)] border border-[var(--border-divider)] rounded text-sm relative">
+                               <div key={t.id} className="p-3 bg-[var(--bg-secondary)] border border-[var(--border-divider)] rounded text-sm relative">
                                     {t.status === 'resolved' && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-500"></span>}
                                     <p className="font-bold mb-1 opacity-70">Query: {t.query}</p>
                                     {t.response && <p className="font-mono text-orange-400">&gt; Mentor: {t.response}</p>}
@@ -282,7 +282,7 @@ export default function StudentDashboard() {
                    
                    <div className="space-y-4">
                        {recommendations.length===0 ? <p className="text-sm italic opacity-50 text-center">Prediction Matrix empty. Optimal status held.</p> : recommendations.map(r => (
-                           <div key={r._id} className="p-4 bg-purple-600/10 border border-purple-500/20 rounded-lg">
+                           <div key={r.id} className="p-4 bg-purple-600/10 border border-purple-500/20 rounded-lg">
                                <div className="flex gap-2 mb-2 items-center">
                                    <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
                                    <span className="text-xs uppercase font-bold text-purple-500 tracking-wider">Model Insight Mapped</span>
@@ -298,8 +298,8 @@ export default function StudentDashboard() {
                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 font-mono"><ShieldCheck /> Privacy Telemetry Log</h2>
                    <div className="h-48 overflow-y-auto space-y-2 font-mono text-xs pr-2">
                        {logs.length === 0 ? <p className="opacity-50 text-center mt-8">Establishing terminal root...</p> : logs.map(l => (
-                           <div key={l._id} className="flex gap-3 py-1 border-b border-black/10 dark:border-white/10">
-                               <span className="opacity-50 shrink-0">[{new Date(l.createdAt).toLocaleTimeString()}]</span>
+                           <div key={l.id} className="flex gap-3 py-1 border-b border-black/10 dark:border-white/10">
+                               <span className="opacity-50 shrink-0">[{new Date(l.created_at).toLocaleTimeString()}]</span>
                                <span className={l.actionType.includes('STUDY') ? 'text-blue-500 font-bold' : l.actionType.includes('TARGET') ? 'text-teal-500' : ''}>{l.description}</span>
                            </div>
                        ))}

@@ -36,8 +36,8 @@ export default function AdminDashboard() {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       const [subs, mnters] = await Promise.all([
-        axios.get('http://localhost:2000/api/admin/subjects', config),
-        axios.get('http://localhost:2000/api/admin/mentors', config)
+        axios.get('/api/admin/subjects', config),
+        axios.get('/api/admin/mentors', config)
       ]);
       setSubjectsList(subs.data);
       setMentorsList(mnters.data);
@@ -49,7 +49,7 @@ export default function AdminDashboard() {
   const fetchStaff = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      const res = await axios.get('http://localhost:2000/api/admin/staff', config);
+      const res = await axios.get('/api/admin/staff', config);
       setStaffList(res.data);
     } catch (err) { console.error(err); }
   };
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       const query = new URLSearchParams(filters).toString();
-      const res = await axios.get(`http://localhost:2000/api/admin/students?${query}`, config);
+      const res = await axios.get(`/api/admin/students?${query}`, config);
       setStudentsList(res.data);
     } catch (err) { console.error(err); }
   };
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
     if(!window.confirm("Are you sure you want to permanently delete this staff member?")) return;
     try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        const res = await axios.delete(`http://localhost:2000/api/admin/staff/${id}`, config);
+        const res = await axios.delete(`/api/admin/staff/${id}`, config);
         showStatus('success', res.data.msg);
         fetchStaff();
         fetchBaseData();
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
           open: true,
           type: 'staff',
           data: {
-              _id: staff._id,
+              id: staff.id,
               fullName: staff.fullName || '',
               email: staff.email || '',
               role: staff.role || 'mentor',
@@ -125,8 +125,8 @@ export default function AdminDashboard() {
   const handleEditStaff = async () => {
       try {
           const config = { headers: { Authorization: `Bearer ${user.token}` } };
-          const { _id, ...payload } = editModal.data;
-          const res = await axios.put(`http://localhost:2000/api/admin/staff/${_id}`, payload, config);
+          const { id, ...payload } = editModal.data;
+          const res = await axios.put(`/api/admin/staff/${id}`, payload, config);
           showStatus('success', res.data.msg);
           setEditModal({ open: false, type: '', data: {} });
           fetchStaff();
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
           open: true,
           type: 'student',
           data: {
-              _id: student._id,
+              id: student.id,
               enrollment: student.enrollment || '',
               semester: student.semester || ''
           }
@@ -152,8 +152,8 @@ export default function AdminDashboard() {
   const handleEditStudent = async () => {
       try {
           const config = { headers: { Authorization: `Bearer ${user.token}` } };
-          const { _id, ...payload } = editModal.data;
-          const res = await axios.put(`http://localhost:2000/api/admin/students/${_id}`, payload, config);
+          const { id, ...payload } = editModal.data;
+          const res = await axios.put(`/api/admin/students/${id}`, payload, config);
           showStatus('success', res.data.msg);
           setEditModal({ open: false, type: '', data: {} });
           fetchStudents();
@@ -184,7 +184,7 @@ export default function AdminDashboard() {
       const payload = { ...assignData, subjectName: selectedSubject.subjectName };
       try {
           const config = { headers: { Authorization: `Bearer ${user.token}` } };
-          const res = await axios.post('http://localhost:2000/api/admin/assign-subject', payload, config);
+          const res = await axios.post('/api/admin/assign-subject', payload, config);
           showStatus('success', res.data.msg);
           setAssignData({ mentorId: '', subjectName: '', subjectId: '' });
       } catch (err) {
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
       setStatusMsg({ type: 'success', text: 'Executing safe database migration protocols...' });
       try {
           const config = { headers: { Authorization: `Bearer ${user.token}` } };
-          const res = await axios.post('http://localhost:2000/api/admin/migrate-semester', migrationData, config);
+          const res = await axios.post('/api/admin/migrate-semester', migrationData, config);
           showStatus('success', res.data.msg);
           setMigrationData({ subjectId: '' });
       } catch (err) {
@@ -243,7 +243,7 @@ export default function AdminDashboard() {
               <form onSubmit={handleAssignSubject} className="theme-panel p-6 shadow-lg">
                   <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><BookCopy className="text-blue-500"/> Assign Subject to Mentor</h2>
                   <div className="space-y-4">
-                      <div><label className="text-xs">Mentor Target</label><select required value={assignData.mentorId} onChange={e=>setAssignData({...assignData, mentorId: e.target.value})} className="theme-input bg-[var(--bg-primary)]"><option value="" disabled>-- Select Mentor --</option>{mentorsList.map(m=><option key={m._id} value={m._id}>{m.fullName}</option>)}</select></div>
+                      <div><label className="text-xs">Mentor Target</label><select required value={assignData.mentorId} onChange={e=>setAssignData({...assignData, mentorId: e.target.value})} className="theme-input bg-[var(--bg-primary)]"><option value="" disabled>-- Select Mentor --</option>{mentorsList.map(m=><option key={m.id} value={m.id}>{m.fullName}</option>)}</select></div>
                       <div><label className="text-xs">Subject Target</label><select required value={assignData.subjectId} onChange={e=>setAssignData({...assignData, subjectId: e.target.value})} className="theme-input bg-[var(--bg-primary)]"><option value="" disabled>-- Select Subject --</option>{subjectsList.map(s=><option key={s.subjectId} value={s.subjectId}>{s.subjectName} [{s.subjectId}]</option>)}</select></div>
                       <button type="submit" className="theme-btn w-full bg-blue-500 hover:bg-blue-600 shadow-blue-500/20 mt-4">Execute Assignment</button>
                   </div>
@@ -262,13 +262,13 @@ export default function AdminDashboard() {
                       </thead>
                       <tbody>
                           {staffList.map(s => (
-                              <tr key={s._id} className="border-b border-[var(--border-divider)] hover:bg-[var(--bg-secondary)]">
+                              <tr key={s.id} className="border-b border-[var(--border-divider)] hover:bg-[var(--bg-secondary)]">
                                   <td className="p-3 font-medium">{s.fullName} <span className="text-xs opacity-50">({s.employeeId})</span></td>
                                   <td className="p-3 uppercase text-xs">{s.role}</td>
                                   <td className="p-3 text-xs">{s.assignedSubjects?.length || 0} node(s)</td>
                                   <td className="p-3 text-right">
                                       <button onClick={() => openStaffEdit(s)} className="px-2 py-1 text-blue-500 hover:bg-blue-500/10 rounded mr-2" title="Edit Staff"><Edit size={16}/></button>
-                                      <button onClick={() => handleDeleteStaff(s._id)} className="px-2 py-1 text-red-500 hover:bg-red-500/10 rounded"><Trash2 size={16}/></button>
+                                      <button onClick={() => handleDeleteStaff(s.id)} className="px-2 py-1 text-red-500 hover:bg-red-500/10 rounded"><Trash2 size={16}/></button>
                                   </td>
                               </tr>
                           ))}
@@ -293,7 +293,7 @@ export default function AdminDashboard() {
                       </thead>
                       <tbody>
                           {studentsList.map(st => (
-                              <tr key={st._id} className="border-b border-[var(--border-divider)] hover:bg-[var(--bg-secondary)]">
+                              <tr key={st.id} className="border-b border-[var(--border-divider)] hover:bg-[var(--bg-secondary)]">
                                   <td className="p-3 font-mono">{st.enrollment}</td><td className="p-3">{st.fullName}</td>
                                   <td className="p-3 text-xs">{st.course}</td><td className="p-3">{st.semester}</td>
                                   <td className="p-3 text-right">

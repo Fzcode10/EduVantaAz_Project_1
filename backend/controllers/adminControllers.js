@@ -1,9 +1,11 @@
-const SubjectModel = require('../models/subject');
-const StaffModel   = require('../models/staff');
-const StudentModel = require('../models/student');
-const { sequelize } = require('../sqlConnection');
+const Subject              = require('../models/sql/Subject');
+const Staff                = require('../models/sql/Staff');
+const Student              = require('../models/sql/Student');
+const StaffAssignedSubject = require('../models/sql/StaffAssignedSubject');
+const { sequelize }        = require('../sqlConnection');
+const { Op }               = require('sequelize');
 
-// ─── Add Subject (MongoDB) + Auto-create SQL Marks Table ─────────────────────
+// ─── Add Subject + Auto-create SQL Marks Table ───────────────────────────────
 exports.addSubject = async (req, res) => {
     const { subjectName, subjectId, courseName, semester, year, department } = req.body;
 
@@ -11,23 +13,15 @@ exports.addSubject = async (req, res) => {
         return res.status(400).json({ error: 'All subject fields are required.' });
     }
 
-    // Sanitize subjectId: only alphanumeric + underscores, lowercase
     let safeId = subjectId.replace(/[^a-z0-9]/gi, '_').toLowerCase().replace(/__+/g, '_');
-
     if (!safeId) return res.status(400).json({ error: 'Invalid Subject ID.' });
 
     try {
-        // 1. Save to MongoDB
-        const subject = await SubjectModel.create({
-            subjectName,
-            subjectId: safeId,
-            courseName,
-            semester,
-            year,
-            department
+        const subject = await Subject.create({
+            subjectName, subjectId: safeId, courseName, semester, year, department
         });
 
-        // 2. Auto-create SQL marks table for this subject
+        // Auto-create SQL marks table
         const createQuery = `
             CREATE TABLE IF NOT EXISTS marks_${safeId} (
                 id             INT AUTO_INCREMENT PRIMARY KEY,
@@ -47,35 +41,37 @@ exports.addSubject = async (req, res) => {
             subject
         });
     } catch (err) {
-        if (err.code === 11000) {
-            return res.status(409).json({ error: 'Subject ID already exists. Use a unique subjectId.' });
+        if (err.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ error: 'Subject ID already exists.' });
         }
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Get All Subjects ─────────────────────────────────────────────────────────
+// ─── Get All Subjects ────────────────────────────────────────────────────────
 exports.getSubjects = async (req, res) => {
     try {
-        const subjects = await SubjectModel.find({}).sort({ createdAt: -1 });
+        const subjects = await Subject.findAll({ order: [['created_at', 'DESC']] });
         res.status(200).json(subjects);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Get All Mentors (for admin assign dropdown) ──────────────────────────────
+// ─── Get All Mentors ─────────────────────────────────────────────────────────
 exports.getMentors = async (req, res) => {
     try {
-        const mentors = await StaffModel.find({ role: 'mentor' })
-            .select('fullName email employeeId');
+        const mentors = await Staff.findAll({
+            where: { role: 'mentor' },
+            attributes: ['id', 'fullName', 'email', 'employeeId']
+        });
         res.status(200).json(mentors);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Assign Subject to Mentor ─────────────────────────────────────────────────
+// ─── Assign Subject to Mentor ────────────────────────────────────────────────
 exports.assignSubjectToMentor = async (req, res) => {
     const { mentorId, subjectName, subjectId } = req.body;
 
@@ -84,42 +80,39 @@ exports.assignSubjectToMentor = async (req, res) => {
     }
 
     try {
-        // Check subject exists in MongoDB
-        const subject = await SubjectModel.findOne({ subjectId });
-        if (!subject) {
-            return res.status(404).json({ error: 'Subject not found in system.' });
-        }
+        const subject = await Subject.findOne({ where: { subjectId } });
+        if (!subject) return res.status(404).json({ error: 'Subject not found.' });
 
-        // Prevent duplicate subject assignment on same mentor
-        const mentor = await StaffModel.findById(mentorId);
+        const mentor = await Staff.findByPk(mentorId);
         if (!mentor) return res.status(404).json({ error: 'Mentor not found.' });
 
-        const alreadyAssigned = mentor.assignedSubjects?.some(s => s.subjectId === subjectId);
-        if (alreadyAssigned) {
-            return res.status(409).json({ error: 'This subject is already assigned to this mentor.' });
-        }
+        // Check for duplicate
+        const existing = await StaffAssignedSubject.findOne({
+            where: { staffId: mentorId, subjectId }
+        });
+        if (existing) return res.status(409).json({ error: 'Already assigned to this mentor.' });
 
-        // Push into assignedSubjects array
-        const updatedMentor = await StaffModel.findByIdAndUpdate(
-            mentorId,
-            { $push: { assignedSubjects: { subjectName, subjectId } } },
-            { new: true }
-        );
-        console.log(updatedMentor);
+        await StaffAssignedSubject.create({ staffId: mentorId, subjectName, subjectId });
+
+        const assignedSubjects = await StaffAssignedSubject.findAll({ where: { staffId: mentorId } });
 
         res.status(200).json({
             msg: `'${subjectName}' assigned to ${mentor.fullName}.`,
-            assignedSubjects: updatedMentor.assignedSubjects
+            assignedSubjects
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Get All Staff ────────────────────────────────────────────────────────────
+// ─── Get All Staff ───────────────────────────────────────────────────────────
 exports.getStaff = async (req, res) => {
     try {
-        const staff = await StaffModel.find().select('-password').sort({ createdAt: -1 });
+        const staff = await Staff.findAll({
+            attributes: { exclude: ['password'] },
+            include: [{ model: StaffAssignedSubject, as: 'assignedSubjects' }],
+            order: [['created_at', 'DESC']]
+        });
         res.status(200).json(staff);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -132,13 +125,13 @@ exports.editStaff = async (req, res) => {
     const { fullName, email, role, employeeId, department, designation, phone } = req.body;
 
     try {
-        const staff = await StaffModel.findByIdAndUpdate(
-            id,
+        const [updated] = await Staff.update(
             { fullName, email, role, employeeId, department, designation, phone },
-            { new: true }
-        ).select('-password');
-        
-        if (!staff) return res.status(404).json({ error: 'Staff not found.' });
+            { where: { id } }
+        );
+        if (!updated) return res.status(404).json({ error: 'Staff not found.' });
+
+        const staff = await Staff.findByPk(id, { attributes: { exclude: ['password'] } });
         res.status(200).json({ msg: 'Staff Profile Updated', staff });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -148,50 +141,50 @@ exports.editStaff = async (req, res) => {
 // ─── Delete Staff ────────────────────────────────────────────────────────────
 exports.deleteStaff = async (req, res) => {
     const { id } = req.params;
-
     try {
-        const staff = await StaffModel.findByIdAndDelete(id);
+        const staff = await Staff.findByPk(id);
         if (!staff) return res.status(404).json({ error: 'Staff not found.' });
-
+        await staff.destroy();
         res.status(200).json({ msg: `Staff ${staff.fullName} removed from system.` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Get All Students (Phase 1 Filtering) ────────────────────────────────────
+// ─── Get All Students (with Filtering) ───────────────────────────────────────
 exports.getStudents = async (req, res) => {
-    // Allows robust filtering query mapping
     const { semester, course } = req.query;
     try {
-        let filter = {};
-        if (semester) filter.semester = semester;
-        if (course) filter.course = new RegExp(course, 'i');
+        let where = {};
+        if (semester) where.semester = semester;
+        if (course) where.course = { [Op.like]: `%${course}%` };
 
-        const students = await StudentModel.find(filter).select('-password').sort({ createdAt: -1 });
+        const students = await Student.findAll({
+            where,
+            attributes: { exclude: ['password'] },
+            order: [['created_at', 'DESC']]
+        });
         res.status(200).json(students);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Update Student & Propagate to SQL Marks ────────────────────────────────
+// ─── Update Student & Propagate to SQL Marks ─────────────────────────────────
 exports.updateStudent = async (req, res) => {
     const { id } = req.params;
     const { enrollment, semester } = req.body;
 
     try {
-        const existingStudent = await StudentModel.findById(id);
+        const existingStudent = await Student.findByPk(id);
         if (!existingStudent) return res.status(404).json({ error: 'Student not found.' });
 
-        // If enrollment is changing, we MUST propagate it to ALL SQL marks tables
+        // If enrollment is changing, propagate to ALL marks tables
         if (enrollment && enrollment !== existingStudent.enrollment) {
-            const subjects = await SubjectModel.find({});
+            const subjects = await Subject.findAll();
             for (let sub of subjects) {
                 const tableName = `marks_${sub.subjectId}`;
-                // Verify table exists before attempting update natively using array destruct
                 const [tableExists] = await sequelize.query(`SHOW TABLES LIKE '${tableName}'`);
-                
                 if (tableExists.length > 0) {
                     await sequelize.query(
                         `UPDATE ${tableName} SET enrollment_id = ? WHERE enrollment_id = ?`,
@@ -201,51 +194,47 @@ exports.updateStudent = async (req, res) => {
             }
         }
 
-        const updatedStudent = await StudentModel.findByIdAndUpdate(
-            id,
+        await Student.update(
             { enrollment: enrollment || existingStudent.enrollment, semester: semester || existingStudent.semester },
-            { new: true }
-        ).select('-password');
+            { where: { id } }
+        );
 
+        const updatedStudent = await Student.findByPk(id, { attributes: { exclude: ['password'] } });
         res.status(200).json({ msg: 'Student Record Synchronized successfully.', student: updatedStudent });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// ─── Semester Shift Migration (Phase 3) ──────────────────────────────────────
+// ─── Semester Shift Migration ────────────────────────────────────────────────
 exports.migrateSemester = async (req, res) => {
     const { subjectId } = req.body;
-    if (!subjectId) return res.status(400).json({ error: 'Target subjectId is required for migration.' });
+    if (!subjectId) return res.status(400).json({ error: 'Target subjectId required.' });
 
     try {
-        const subject = await SubjectModel.findOne({ subjectId });
+        const subject = await Subject.findOne({ where: { subjectId } });
         if (!subject) return res.status(404).json({ error: 'Subject not found.' });
 
         const tableName = `marks_${subjectId}`;
         const timestamp = new Date().toISOString().replace(/[-:T.]/g, '_').slice(0, 15);
         const archiveTableName = `${tableName}_archive_${timestamp}`;
 
-        // 1. Verify primary table exists
         const [tableExists] = await sequelize.query(`SHOW TABLES LIKE '${tableName}'`);
         if (tableExists.length === 0) {
-            return res.status(404).json({ error: `SQL Form Table ${tableName} does not exist.` });
+            return res.status(404).json({ error: `SQL table ${tableName} does not exist.` });
         }
 
-        // 2. Clone active data to archive table
+        // Clone → Truncate → Increment semester
         await sequelize.query(`CREATE TABLE ${archiveTableName} AS SELECT * FROM ${tableName}`);
-
-        // 3. Truncate (wipe) the active table
         await sequelize.query(`TRUNCATE TABLE ${tableName}`);
 
-        // 4. Update MongoDB Student semester logic safely matching the Course of this Subject
-        await StudentModel.updateMany(
-            { course: new RegExp(subject.courseName, 'i'), semester: subject.semester },
-            { $inc: { semester: 1 } }
+        await sequelize.query(
+            `UPDATE students SET semester = semester + 1 WHERE LOWER(course) LIKE ? AND semester = ?`,
+            { replacements: [`%${subject.courseName.toLowerCase()}%`, subject.semester] }
         );
 
         res.status(200).json({ 
-            msg: `Semester Reset Successful. Backup safely archived as ${archiveTableName} and MongoDB synced.`
+            msg: `Semester Reset Successful. Backup archived as ${archiveTableName}.`
         });
     } catch (err) {
         res.status(500).json({ error: err.message });

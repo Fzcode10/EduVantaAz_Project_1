@@ -9,7 +9,7 @@ const verifyToken = (req, res, next) => {
     
     try {
         // The studentController uses process.env.SECRET to sign
-        const decoded = jwt.verify(token, process.env.SECRET || 'fallback_secret');
+        const decoded = jwt.verify(token, process.env.SECRET);
         req.user = decoded;
     } catch (err) {
         return res.status(401).json({ error: "Invalid Token" });

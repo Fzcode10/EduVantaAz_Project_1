@@ -6,7 +6,8 @@ const {
     getMySubjects, getStudents, saveMarks, getSubjectMarks, saveAttendance,
     getAnalytics, createTarget, getTargets,
     getRecommendations, verifyRecommendation,
-    getTickets, resolveTicket
+    getTickets, resolveTicket,
+    uploadMaterial, getMaterials
 } = require('../controllers/mentorControllers');
 
 router.use(requireAuth);
@@ -37,5 +38,8 @@ router.put('/recommendations/:id/verify', verifyRecommendation);
 
 router.get('/tickets/:subjectId', getTickets);
 router.put('/tickets/:id', resolveTicket);
+
+router.post('/materials', uploadMaterial);
+router.get('/materials/:subjectId', getMaterials);
 
 module.exports = router;
