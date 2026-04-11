@@ -110,7 +110,8 @@ exports.getAnalytics = async (req, res) => {
                 ...mark,
                 student_obj_id: student ? student.id : null,
                 fullName: student ? student.fullName : 'Unknown Identity',
-                attendancePct: mark.attendance || 0
+                attendancePct: mark.attendance || 0,
+                studentRollno: student.rollno || 'N/A'
             };
         });
 
@@ -204,11 +205,23 @@ exports.resolveTicket = async (req, res) => {
 
 // ─── Materials Upload ────────────────────────────────────────────────────────
 exports.uploadMaterial = async (req, res) => {
-    const { subjectId, title, fileType, filePath, fileSize } = req.body;
+    // title and subjectId come from form-data text fields
+    const { subjectId, title } = req.body;
     try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No physical file was uploaded." });
+        }
+        
+        const filePath = `/uploads/materials/${req.file.filename}`;
+        const fileSize = req.file.size;
+        
         const material = await Material.create({
             mentorId: req.user._id,
-            subjectId, title, fileType, filePath, fileSize
+            subjectId, 
+            title, 
+            fileType: 'pdf', 
+            filePath, 
+            fileSize
         });
         res.status(201).json({ msg: "Material uploaded.", material });
     } catch (err) {

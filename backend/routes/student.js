@@ -5,7 +5,7 @@ const router = express.Router();
 const {
     studentDetials, login, signup, isExist, profile,
     getMyData, getTargets, updateTargetProgress, logSession, 
-    getActivityLogs, getRecommendations, getTickets, createTicket
+    getActivityLogs, getRecommendations, getTickets, createTicket, getMaterials
 } = require('../controllers/studentControllers.js');
 
 
@@ -43,6 +43,9 @@ router.get('/recommendations', getRecommendations);
 // Communications
 router.get('/tickets', getTickets);
 router.post('/tickets', createTicket);
+
+// Materials
+router.get('/materials/:subjectId', getMaterials);
 
 // Privacy & Truth Stopwatch
 router.post('/study-session', logSession);

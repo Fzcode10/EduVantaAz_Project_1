@@ -345,12 +345,12 @@ export default function AdminDashboard() {
                       <div><label className="text-xs">Subject Name</label><input type="text" value={subjectData.subjectName} onChange={e=>setSubjectData({...subjectData, subjectName: e.target.value})} className="theme-input" required /></div>
                       <div><label className="text-xs">Subject Code</label><input type="text" value={subjectData.subjectId} onChange={e=>setSubjectData({...subjectData, subjectId: e.target.value})} className="theme-input" required /></div>
                   </div>
-                  <div><label className="text-xs">Course Name Regex</label><input type="text" value={subjectData.courseName} onChange={e=>setSubjectData({...subjectData, courseName: e.target.value})} className="theme-input" placeholder="e.g. Computer Science" required /></div>
+                  <div><label className="text-xs">Course Name</label><input type="text" value={subjectData.courseName} onChange={e=>setSubjectData({...subjectData, courseName: e.target.value})} className="theme-input" placeholder="e.g. Computer Science" required /></div>
                   <div className="grid grid-cols-2 gap-4">
                       <div><label className="text-xs">Current Target Semester</label><input type="number" value={subjectData.semester} onChange={e=>setSubjectData({...subjectData, semester: e.target.value})} className="theme-input" required /></div>
-                      <div><label className="text-xs">Academic Year</label><input type="number" value={subjectData.year} onChange={e=>setSubjectData({...subjectData, year: e.target.value})} className="theme-input" required /></div>
+                      <div><label className="text-xs">Academic Year</label><input type="text" value={subjectData.year} placeholder="2026-2027" onChange={e=>setSubjectData({...subjectData, year: e.target.value})} className="theme-input" required /></div>
                   </div>
-                  <div><label className="text-xs">Department Vector</label><input type="text" value={subjectData.department} onChange={e=>setSubjectData({...subjectData, department: e.target.value})} className="theme-input" required /></div>
+                  <div><label className="text-xs">Department</label><input type="text" value={subjectData.department} onChange={e=>setSubjectData({...subjectData, department: e.target.value})} className="theme-input" required /></div>
                   <button type="submit" className="theme-btn w-full bg-teal-500 mt-4 shadow-teal-500/20">Instantiate SQL Table</button>
               </div>
           </form>

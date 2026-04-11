@@ -39,7 +39,27 @@ router.put('/recommendations/:id/verify', verifyRecommendation);
 router.get('/tickets/:subjectId', getTickets);
 router.put('/tickets/:id', resolveTicket);
 
-router.post('/materials', uploadMaterial);
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/materials/');
+    },
+    filename: (req, file, cb) => {
+        // Append epoch for uniqueness
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ 
+    storage,
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'application/pdf') cb(null, true);
+        else cb(new Error("Only PDF format is supported!"));
+    }
+});
+
+router.post('/materials', upload.single('file'), uploadMaterial);
 router.get('/materials/:subjectId', getMaterials);
 
 module.exports = router;

@@ -5,6 +5,8 @@ const Recommendation = require('../models/sql/Recommendation');
 const Ticket         = require('../models/sql/Ticket');
 const StudySession   = require('../models/sql/StudySession');
 const ActivityLog    = require('../models/sql/ActivityLog');
+const StaffAssignedSubject = require('../models/sql/StaffAssignedSubject');
+const Material       = require('../models/sql/Material');
 const { sequelize }  = require('../sqlConnection');
 const { Op }         = require('sequelize');
 const jwt = require('jsonwebtoken');
@@ -112,6 +114,9 @@ exports.getMyData = async (req, res) => {
                         { replacements: [student.enrollment] }
                     );
 
+                    const assignment = await StaffAssignedSubject.findOne({ where: { subjectId: sub.subjectId } });
+                    const mentorId = assignment ? assignment.staffId : null;
+
                     performanceData.push({
                         subjectName: sub.subjectName,
                         subjectId: sub.subjectId,
@@ -121,7 +126,8 @@ exports.getMyData = async (req, res) => {
                         department: sub.department,
                         sqlMark: sqlRecord.length > 0 ? sqlRecord[0].marks : 0,
                         sqlGrade: sqlRecord.length > 0 ? sqlRecord[0].grade : 'N/A',
-                        attendancePct: sqlRecord.length > 0 ? (sqlRecord[0].attendance || 0) : 0
+                        attendancePct: sqlRecord.length > 0 ? (sqlRecord[0].attendance || 0) : 0,
+                        mentorId: mentorId
                     });
                 }
             } catch (err) {
@@ -224,8 +230,18 @@ exports.getTickets = async (req, res) => {
 };
 
 exports.createTicket = async (req, res) => {
-    const { subjectId, query, mentorId } = req.body;
+    const { subjectId, query } = req.body;
+    let mentorId = req.body.mentorId;
+    
     try {
+        if (!mentorId) {
+            const assignment = await StaffAssignedSubject.findOne({ where: { subjectId } });
+            if (!assignment) {
+                return res.status(400).json({ error: 'No mentor assigned to this subject.' });
+            }
+            mentorId = assignment.staffId;
+        }
+
         const t = await Ticket.create({
             studentId: req.user._id,
             subjectId, mentorId, query, status: 'open'
@@ -238,5 +254,16 @@ exports.createTicket = async (req, res) => {
         });
         
         res.status(201).json(t);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+// ─── 6. Materials Retrieval ──────────────────────────────────────────────────
+exports.getMaterials = async (req, res) => {
+    try {
+        const materials = await Material.findAll({
+            where: { subjectId: req.params.subjectId },
+            order: [['created_at', 'DESC']]
+        });
+        res.status(200).json(materials);
     } catch (err) { res.status(500).json({ error: err.message }); }
 };

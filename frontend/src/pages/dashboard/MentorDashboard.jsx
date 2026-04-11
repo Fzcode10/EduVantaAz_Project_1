@@ -20,9 +20,15 @@ export default function MentorDashboard() {
   const [targets, setTargets] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [materials, setMaterials] = useState([]);
+
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 3);
+
+  const formattedMinDate = minDate.toISOString().split('T')[0];
 
   // Form states
-  const [newTarget, setNewTarget] = useState({ studentId: '', title: '', description: '', targetMetric: 100, deadline: '' });
+  const [newTarget, setNewTarget] = useState({ studentId: '', title: '', description: '', targetMetric: 100, deadline: minDate });
   
   // Drill-down Modal State
   const [drillDownStudent, setDrillDownStudent] = useState(null);
@@ -55,8 +61,10 @@ export default function MentorDashboard() {
          const res = await axios.get(`/api/mentor/recommendations/${selectedSubject}`, config);
          setRecommendations(res.data);
       } else if (activeTab === 'comms') {
-         const res = await axios.get(`/api/mentor/tickets/${selectedSubject}`, config);
-         setTickets(res.data);
+         const resTickets = await axios.get(`/api/mentor/tickets/${selectedSubject}`, config);
+         setTickets(resTickets.data);
+         const resMaterials = await axios.get(`/api/mentor/materials/${selectedSubject}`, config);
+         setMaterials(resMaterials.data);
       }
     } catch (err) { console.error("Tab fetch failed: ", err); }
   };
@@ -78,6 +86,7 @@ export default function MentorDashboard() {
   const handleAssignTarget = async (e) => {
     e.preventDefault();
     try {
+        console.log(newTarget);
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
         await axios.post('/api/mentor/targets', { ...newTarget, subjectId: selectedSubject }, config);
         showStatus('success', 'Goal Assigned to Student');
@@ -112,6 +121,25 @@ export default function MentorDashboard() {
         showStatus('success', 'Doubt Ticket Closed.');
         fetchTabData();
     } catch (err) { showStatus('error', err.response?.data?.error); }
+  };
+
+  const handleMaterialUpload = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('subjectId', selectedSubject);
+      formData.append('title', file.name);
+
+      try {
+          const config = { headers: { Authorization: `Bearer ${user.token}`, 'Content-Type': 'multipart/form-data' } };
+          await axios.post('/api/mentor/materials', formData, config);
+          showStatus('success', 'Material Uploaded Successfully.');
+          fetchTabData();
+      } catch (err) {
+          showStatus('error', err.response?.data?.error || 'Failed to upload material');
+      }
   };
 
   if (!user) return <div className="p-8">Loading...</div>;
@@ -208,16 +236,16 @@ export default function MentorDashboard() {
                   <div>
                       <label className="text-xs">Select Target Student</label>
                       <select required value={newTarget.studentId} onChange={e=>setNewTarget({...newTarget, studentId: e.target.value})} className="theme-input bg-[var(--bg-primary)]">
-                          <option value="">-- Global Audience List --</option>
+                          <option value="">-- Subject Student List --</option>
                           {/* We mock this by stealing the analytics array for IDs. 
                               In prod, it should fetch raw students from GET /students strictly maped by subject course. */}
-                          {analytics.map(a => <option key={a.enrollment_id} value={a.enrollment_id}>{a.fullName} - {a.enrollment_id}</option>)}
+                          {analytics.map(a => <option key={a.studentRollno} value={a.id}>{a.fullName} - {a.studentRollno}</option>)}
                       </select>
                   </div>
                   <div><label className="text-xs">Metric Title</label><input type="text" required value={newTarget.title} onChange={e=>setNewTarget({...newTarget, title: e.target.value})} className="theme-input" placeholder="e.g. Solve 50 Trees" /></div>
                   <div className="grid grid-cols-2 gap-4">
                       <div><label className="text-xs">Out of (Max)</label><input type="number" required value={newTarget.targetMetric} onChange={e=>setNewTarget({...newTarget, targetMetric: e.target.value})} className="theme-input" /></div>
-                      <div><label className="text-xs">Deadline</label><input type="date" required value={newTarget.deadline} onChange={e=>setNewTarget({...newTarget, deadline: e.target.value})} className="theme-input" /></div>
+                      <div><label className="text-xs">Deadline</label><input type="date" required value={newTarget.deadline} min={formattedMinDate} onChange={e=>setNewTarget({...newTarget, deadline: e.target.value})} className="theme-input" /></div>
                   </div>
                   <button type="submit" className="theme-btn w-full shadow-lg bg-accent shadow-accent/20">Dispatch Goal Node</button>
               </div>
@@ -291,16 +319,29 @@ export default function MentorDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-500">
           <div className="theme-panel p-6 shadow-lg h-fit">
               <h2 className="text-xl font-bold mb-6 flex gap-2 items-center"><Upload className="text-teal-500"/> Subject Materials</h2>
-              <div className="border-2 border-dashed border-[var(--border-divider)] rounded-xl p-8 text-center bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer">
+              <div 
+                  onClick={() => document.getElementById('material-upload').click()}
+                  className="border-2 border-dashed border-[var(--border-divider)] rounded-xl p-8 text-center bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
+              >
                   <Upload size={32} className="mx-auto mb-3 text-[var(--text-secondary)]" />
                   <p className="font-bold text-[var(--text-primary)]">Drag & Drop Documents</p>
-                  <p className="text-xs text-[var(--text-secondary)] mt-1">PDF, PPTX, or MP4 supported</p>
-                  <button onClick={() => showStatus('success', 'File Upload UI securely triggered. Storage Bucket logic required.')} className="theme-btn py-2 px-6 mt-4 bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-divider)]">Select Local Node</button>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">PDF supported</p>
+                  <input type="file" id="material-upload" className="hidden" accept=".pdf" onChange={handleMaterialUpload} />
+                  <button className="theme-btn py-2 px-6 mt-4 bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-divider)]">Select Local Node</button>
               </div>
               
               <div className="mt-6 space-y-3">
                   <h3 className="font-bold text-sm border-b pb-2">Active Syllabus Repositories</h3>
-                  <p className="text-xs text-[var(--text-secondary)] italic text-center py-4">No payload repositories exist at the target index.</p>
+                  {materials.length === 0 ? (
+                      <p className="text-xs text-[var(--text-secondary)] italic text-center py-4">No payload repositories exist at the target index.</p>
+                  ) : (
+                      materials.map(m => (
+                          <div key={m.id} className="p-3 border rounded bg-[var(--bg-secondary)] flex justify-between items-center">
+                              <span className="text-sm font-bold truncate max-w-[200px]">{m.title}</span>
+                              <a href={`http://localhost:2000${m.filePath}`} target="_blank" rel="noreferrer" className="text-xs text-teal-500 underline">View PDF</a>
+                          </div>
+                      ))
+                  )}
               </div>
           </div>
 

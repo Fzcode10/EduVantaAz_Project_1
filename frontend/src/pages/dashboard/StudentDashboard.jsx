@@ -5,7 +5,7 @@ import {
   BarChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ComposedChart 
 } from 'recharts';
 import { 
-  Activity, Target, Clock, ShieldCheck, Cpu, Play, Square, MessageSquare, AlertTriangle, Check
+  Activity, Target, Clock, ShieldCheck, Cpu, Play, Square, MessageSquare, AlertTriangle, Check, BookOpen, Download
 } from 'lucide-react';
 
 export default function StudentDashboard() {
@@ -17,6 +17,8 @@ export default function StudentDashboard() {
   const [recommendations, setRecommendations] = useState([]);
   const [logs, setLogs] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [materialSubject, setMaterialSubject] = useState('');
   
   // Stopwatch Internal State
   const [timerActive, setTimerActive] = useState(false);
@@ -26,7 +28,7 @@ export default function StudentDashboard() {
   const timerRef = useRef(null);
   
   // Form State
-  const [newTicket, setNewTicket] = useState({ subjectId: '', query: '' });
+  const [newTicket, setNewTicket] = useState({ subjectId: '', mentorId: '', query: '' });
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
 
   // ─── NETWORK FETCHING ──────────────────────────────────────────────
@@ -130,12 +132,27 @@ export default function StudentDashboard() {
   const handleTicketSubmit = async (e) => {
       e.preventDefault();
       try {
+        console.log(newTicket);
           const config = { headers: { Authorization: `Bearer ${user.token}` } };
           await axios.post('/api/student/tickets', newTicket, config);
           showStatus('success', 'Doubt securely lodged natively with active Mentor constraints.');
-          setNewTicket({ subjectId: '', query: '' });
+          setNewTicket({ subjectId: '', mentorId: '', query: '' });
           fetchData();
       } catch (err) { showStatus('error', err.response?.data?.error); }
+  };
+
+  // ─── MATERIALS HANDLERS ───────────────────────────────────────────
+  const handleFetchMaterials = async (subjectId) => {
+      setMaterialSubject(subjectId);
+      if (!subjectId) {
+          setMaterials([]);
+          return;
+      }
+      try {
+          const config = { headers: { Authorization: `Bearer ${user.token}` } };
+          const res = await axios.get(`/api/student/materials/${subjectId}`, config);
+          setMaterials(res.data);
+      } catch (err) { console.error("Failed to fetch materials: ", err); }
   };
 
 
@@ -221,17 +238,47 @@ export default function StudentDashboard() {
                    </div>
                </div>
                
+               {/* 2.5 Syllabus Repository Module */}
+               <div className="theme-panel p-6 shadow-xl border-t-4 border-t-indigo-500">
+                   <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><BookOpen className="text-indigo-500"/> Syllabus Materials Repository</h2>
+                   <div className="flex flex-col md:flex-row gap-6">
+                       <div className="flex-1">
+                           <select value={materialSubject} onChange={(e) => handleFetchMaterials(e.target.value)} className="theme-input bg-[var(--bg-secondary)] mb-4">
+                               <option className="text-black" value="">Select Target Subject for Syllabus</option>
+                               {performance.map(p => <option className="text-black" key={p.subjectId} value={p.subjectId}>{p.subjectName}</option>)}
+                           </select>
+                           <p className="text-xs text-[var(--text-secondary)]">Mentors drop syllabus updates directly into the specific module repository. Please select an array to download PDFs natively.</p>
+                       </div>
+                       
+                       <div className="flex-1 space-y-3 h-48 overflow-y-auto pr-2 border-l border-[var(--border-divider)] md:pl-6">
+                           {materialSubject === '' ? (
+                               <p className="text-center mt-10 text-[var(--text-secondary)] italic text-sm">Select vector to mount module.</p>
+                           ) : materials.length === 0 ? (
+                               <p className="text-center mt-10 text-[var(--text-secondary)] italic text-sm">Payload repository empty for this subject.</p>
+                           ) : materials.map(m => (
+                               <div key={m.id} className="p-3 bg-[var(--bg-secondary)] border border-[var(--border-divider)] rounded flex justify-between items-center transition hover:bg-[var(--bg-surface)]">
+                                   <span className="text-sm font-bold truncate max-w-[180px]">{m.title}</span>
+                                   <a href={`http://localhost:2000${m.filePath}`} target="_blank" rel="noreferrer" className="flex gap-1 items-center bg-indigo-500 text-white text-xs px-2 py-1 rounded hover:bg-indigo-600"><Download size={14}/> View pdf </a>
+                               </div>
+                           ))}
+                       </div>
+                   </div>
+               </div>
+               
                {/* Bonus Comms Section (Merged into left flow visually) */}
                <div className="theme-panel p-6 shadow-xl border-t-4 border-t-orange-500">
-                   <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><MessageSquare className="text-orange-500"/> Mentor Resolution Channel</h2>
+                   <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><MessageSquare className="text-orange-500"/>Connect with mentor</h2>
                    <div className="flex flex-col md:flex-row gap-6">
                        <form onSubmit={handleTicketSubmit} className="flex-1 space-y-4">
-                           <select required value={newTicket.subjectId} onChange={e=>setNewTicket({...newTicket, subjectId: e.target.value})} className="theme-input bg-[var(--bg-secondary)]">
-                               <option value="">Select Enrolled Subject Target</option>
-                               {performance.map(p => <option key={p.subjectId} value={p.subjectId}>{p.subjectName}</option>)}
+                           <select required value={newTicket.subjectId} onChange={e=>{
+                               const selectedSubject = performance.find(p => p.subjectId === e.target.value);
+                               setNewTicket({...newTicket, subjectId: e.target.value, mentorId: selectedSubject ? selectedSubject.mentorId : ''});
+                           }} className="theme-input bg-[var(--bg-secondary)]">
+                               <option className="text-black" value="">Select Enrolled Subject Target</option>
+                               {performance.map(p => <option className="text-black" key={p.subjectId} value={p.subjectId}>{p.subjectName} </option>)}
                            </select>
                            <textarea required value={newTicket.query} onChange={e=>setNewTicket({...newTicket, query: e.target.value})} placeholder="Emit logical query sequence... mentor receives node immediately." rows="3" className="theme-input"></textarea>
-                           <button type="submit" className="theme-btn w-full bg-orange-500 shadow-orange-500/20">Establish Node Contact</button>
+                           <button type="submit" className="theme-btn w-full bg-orange-500 shadow-orange-500/20">Send query to mentor</button>
                        </form>
                        
                        <div className="flex-1 space-y-3 h-48 overflow-y-auto pr-2">
