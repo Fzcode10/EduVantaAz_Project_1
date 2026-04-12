@@ -5,6 +5,7 @@ const Target               = require('../models/sql/Target');
 const Recommendation       = require('../models/sql/Recommendation');
 const Ticket               = require('../models/sql/Ticket');
 const Material             = require('../models/sql/Material');
+const Subject              = require('../models/sql/Subject');
 const { sequelize }        = require('../sqlConnection');
 
 // ─── Get Mentor's Assigned Subjects ──────────────────────────────────────────
@@ -19,11 +20,26 @@ exports.getMySubjects = async (req, res) => {
     }
 };
 
+exports.subDetials = async (req, res) => {
+    try {
+        const { subjectId } = req.params;
+        console.log(subjectId);
+        const subject = await Subject.findOne({
+            where: { subject_id: subjectId }
+        });
+        res.status(200).json(subject || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 // ─── Get All Students (for Marks Entry roster) ──────────────────────────────
 exports.getStudents = async (req, res) => {
     try {
+        const {semester} = req.params;
         const students = await Student.findAll({
-            attributes: ['id', 'fullName', 'enrollment', 'rollno', 'course', 'semester']
+            attributes: ['id', 'fullName', 'enrollment', 'rollno', 'course', 'semester'],
+            where : {semester : semester}
         });
         res.status(200).json(students);
     } catch (err) {

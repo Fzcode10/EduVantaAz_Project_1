@@ -7,7 +7,7 @@ const {
     getAnalytics, createTarget, getTargets,
     getRecommendations, verifyRecommendation,
     getTickets, resolveTicket,
-    uploadMaterial, getMaterials
+    uploadMaterial, getMaterials, subDetials
 } = require('../controllers/mentorControllers');
 
 router.use(requireAuth);
@@ -22,7 +22,8 @@ const mentorGuard = (req, res, next) => {
 router.use(mentorGuard);
 
 router.get('/my-subjects', getMySubjects);
-router.get('/students', getStudents);
+router.get('/students/:semester', getStudents);
+router.get('/subdetials/:subjectId', subDetials);
 router.post('/save-marks', saveMarks);
 router.get('/marks/:subject_name', getSubjectMarks);
 router.post('/attendance', saveAttendance);

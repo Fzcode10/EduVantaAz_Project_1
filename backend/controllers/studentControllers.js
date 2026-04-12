@@ -167,7 +167,7 @@ exports.updateTargetProgress = async (req, res) => {
             await ActivityLog.create({
                 studentId: req.user._id,
                 actionType: 'TARGET_UPDATE',
-                description: `Successfully completed Goal Array object: ${target.title}`
+                description: `Successfully completed Goal: ${target.title}`
             });
         }
 
@@ -186,7 +186,7 @@ exports.logSession = async (req, res) => {
         await ActivityLog.create({
             studentId: req.user._id,
             actionType: 'STUDY_SESSION_COMPLETED',
-            description: `Clocked ${Math.round(durationInSeconds/60)} minute deep-work interval for node [${subjectId}]`
+            description: `Clocked ${Math.round(durationInSeconds/60)} minute deep-work interval for subjectCode [${subjectId}]`
         });
 
         res.status(201).json({ msg: "Truth Session Indexed securely", session });

@@ -407,7 +407,7 @@ export default function AdminDashboard() {
   );
 
   return (
-      <div className="min-h-screen max-w-[1400px] mx-auto p-4 md:p-8 relative">
+      <div className="min-h-screen max-w-[1400px] mx-auto max-w-7xl p-4 md:p-8 relative">
           {/* Header */}
           <div className="theme-panel w-full p-6 mb-6 flex justify-between items-center border-l-4 border-l-accent shadow-md">
              <div>

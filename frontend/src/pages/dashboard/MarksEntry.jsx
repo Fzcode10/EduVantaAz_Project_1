@@ -20,11 +20,17 @@ export default function MarksEntry() {
       try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
         
-        // 1. Fetch Students natively from MongoDB
-        const stuRes = await axios.get('http://localhost:2000/api/mentor/students', config);
+        // Subject detials to find subject semester.
+        const subDetials = await axios.get(`/api/mentor/subdetials/${subjectId}`, config);
+
+        const sem = subDetials.data.semester;
+
+        console.log(sem);
+        
+        const stuRes = await axios.get(`http://localhost:2000/api/mentor/students/${sem}`, config);
         setStudents(stuRes.data);
         
-        // 2. Fetch Existing Marks structurally from MySQL
+   
         const marksRes = await axios.get(`http://localhost:2000/api/mentor/marks/${subjectId}`, config);
         
         // 3. Map SQL array functionally into React State Matrix safely tied via Enrollment_Id validation natively
