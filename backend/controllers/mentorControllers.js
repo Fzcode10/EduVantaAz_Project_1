@@ -78,9 +78,10 @@ exports.saveMarks = async (req, res) => {
 };
 
 exports.getSubjectMarks = async (req, res) => {
-    const { subject_name } = req.params;
+    // NOTE: param is named :subject_name in route for legacy, but value is always a subjectId
+    const { subject_name: subjectId } = req.params;
     try {
-        let safeName = subject_name.replace(/[^a-z0-9]/gi, '_').toLowerCase().replace(/__+/g, '_');
+        let safeName = subjectId.replace(/[^a-z0-9]/gi, '_').toLowerCase().replace(/__+/g, '_');
         const [results] = await sequelize.query(`SELECT * FROM marks_${safeName}`);
         res.status(200).json(results);
     } catch (err) {
@@ -123,11 +124,18 @@ exports.getAnalytics = async (req, res) => {
         const mergedData = sqlMarks.map(mark => {
             const student = students.find(s => s.enrollment === mark.enrollment_id);
             return {
-                ...mark,
-                student_obj_id: student ? student.id : null,
+                // SQL mark fields (id here is the marks-table row id, NOT the student id)
+                enrollment_id: mark.enrollment_id,
+                marks: mark.marks,
+                grade: mark.grade,
+                attendance: mark.attendance,
+                remarks: mark.remarks,
+                // Student fields mapped explicitly to avoid id collision
+                studentId: student ? student.id : null,       // ← actual Student PK for createTarget
+                student_obj_id: student ? student.id : null,  // ← kept for backwards compat
                 fullName: student ? student.fullName : 'Unknown Identity',
                 attendancePct: mark.attendance || 0,
-                studentRollno: student.rollno || 'N/A'
+                studentRollno: student ? student.rollno : 'N/A'
             };
         });
 

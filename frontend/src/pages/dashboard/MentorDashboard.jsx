@@ -237,9 +237,8 @@ export default function MentorDashboard() {
                       <label className="text-xs">Select Target Student</label>
                       <select required value={newTarget.studentId} onChange={e=>setNewTarget({...newTarget, studentId: e.target.value})} className="theme-input bg-[var(--bg-primary)]">
                           <option value="">-- Subject Student List --</option>
-                          {/* We mock this by stealing the analytics array for IDs. 
-                              In prod, it should fetch raw students from GET /students strictly maped by subject course. */}
-                          {analytics.map(a => <option key={a.studentRollno} value={a.id}>{a.fullName} - {a.studentRollno}</option>)}
+                          {/* studentId is the actual Student table PK (mapped explicitly in getAnalytics) */}
+                          {analytics.map(a => <option key={a.studentRollno} value={a.studentId}>{a.fullName} - {a.studentRollno}</option>)}
                       </select>
                   </div>
                   <div><label className="text-xs">Metric Title</label><input type="text" required value={newTarget.title} onChange={e=>setNewTarget({...newTarget, title: e.target.value})} className="theme-input" placeholder="e.g. Solve 50 Trees" /></div>

@@ -18,7 +18,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post('http://localhost:2000/api/auth/login', { email, password });
+      const res = await axios.post('/api/auth/login', { email, password });
       
       localStorage.setItem('student', JSON.stringify(res.data));
       dispatch({ type: 'LOGIN', payload: res.data });

@@ -213,7 +213,7 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <form onSubmit={handleCreateStaff} className="theme-panel p-6 shadow-lg">
                   <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><UserPlus className="text-red-500"/> Assign Staff Identity</h2>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                       <div><label className="text-xs">Full Name</label><input type="text" value={staffData.fullName} onChange={e=>setStaffData({...staffData, fullName: e.target.value})} className="theme-input" required /></div>
                       <div><label className="text-xs">Email</label><input type="email" value={staffData.email} onChange={e=>setStaffData({...staffData, email: e.target.value})} className="theme-input" required /></div>
                       <div><label className="text-xs">Employee ID</label><input type="text" value={staffData.employeeId} onChange={e=>setStaffData({...staffData, employeeId: e.target.value})} className="theme-input" required /></div>
@@ -280,9 +280,9 @@ export default function AdminDashboard() {
           <div className="theme-panel p-6 shadow-lg">
               <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><Layers className="text-teal-500"/> Student Identity Filters</h2>
               {/* Filter Row */}
-              <div className="flex gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row gap-4 mb-4">
                   <input type="text" placeholder="Course Filter (e.g. B.Tech)" className="theme-input text-sm flex-1" onBlur={e => fetchStudents({ course: e.target.value })} />
-                  <input type="number" placeholder="Semester" className="theme-input text-sm w-24" onBlur={e => fetchStudents({ semester: e.target.value })} />
+                  <input type="number" placeholder="Semester" className="theme-input text-sm w-full sm:w-24" onBlur={e => fetchStudents({ semester: e.target.value })} />
               </div>
               <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm border-collapse">
@@ -341,12 +341,12 @@ export default function AdminDashboard() {
           <form onSubmit={handleCreateSubject} className="theme-panel p-8 shadow-lg">
               <h2 className="text-2xl font-bold flex items-center gap-2 mb-6"><Database className="text-teal-500"/> Define Subject Schema</h2>
               <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div><label className="text-xs">Subject Name</label><input type="text" value={subjectData.subjectName} onChange={e=>setSubjectData({...subjectData, subjectName: e.target.value})} className="theme-input" required /></div>
                       <div><label className="text-xs">Subject Code</label><input type="text" value={subjectData.subjectId} onChange={e=>setSubjectData({...subjectData, subjectId: e.target.value})} className="theme-input" required /></div>
                   </div>
                   <div><label className="text-xs">Course Name</label><input type="text" value={subjectData.courseName} onChange={e=>setSubjectData({...subjectData, courseName: e.target.value})} className="theme-input" placeholder="e.g. Computer Science" required /></div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div><label className="text-xs">Current Target Semester</label><input type="number" value={subjectData.semester} onChange={e=>setSubjectData({...subjectData, semester: e.target.value})} className="theme-input" required /></div>
                       <div><label className="text-xs">Academic Year</label><input type="text" value={subjectData.year} placeholder="2026-2027" onChange={e=>setSubjectData({...subjectData, year: e.target.value})} className="theme-input" required /></div>
                   </div>
@@ -385,29 +385,31 @@ export default function AdminDashboard() {
 
               <div className="theme-panel p-6 shadow-lg">
                   <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><Plus className="text-pink-500"/> Parametric Feature Expansion</h2>
-                  <div className="flex gap-4 items-end h-full mb-2">
-                       <div className="flex-1"><label className="text-xs">New Tensor Parameter</label><input type="text" placeholder="e.g. Subjective Attendance Index" className="theme-input" /></div>
-                       <button onClick={(e) => { e.preventDefault(); showStatus('success', 'Local schemas ordered to update nodes.'); }} className="theme-btn bg-pink-600 shadow-pink-600/20 h-[42px] px-6">Deploy Update</button>
-                  </div>
+                   <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-4 items-end mb-2">
+                       <div className="min-w-0"><label className="text-xs">New Tensor Parameter</label><input type="text" placeholder="e.g. Subjective Attendance Index" className="theme-input" /></div>
+                       <button onClick={(e) => { e.preventDefault(); showStatus('success', 'Local schemas ordered to update nodes.'); }} className="theme-btn bg-pink-600 shadow-pink-600/20 h-[42px] px-6 w-full sm:w-auto sm:justify-self-end">Deploy Update</button>
+                   </div>
               </div>
           </div>
 
           <div className="theme-panel p-6 shadow-lg">
               <h2 className="text-xl font-bold flex items-center gap-2 mb-4">Edge Weight Submissions (Mock)</h2>
-              <table className="w-full text-left font-mono text-sm">
-                  <thead className="bg-[var(--bg-secondary)]"><tr className="text-[var(--text-secondary)]"><th className="p-3">Edge Node IP</th><th className="p-3">Loss</th><th className="p-3">Version Timestamp</th></tr></thead>
-                  <tbody>
-                      <tr className="border-b border-[var(--border-divider)]"><td className="p-3">10.0.12.5 (Mentor A)</td><td className="p-3 text-green-500">0.0412</td><td className="p-3">2026-03-30T10:14Z</td></tr>
-                      <tr className="border-b border-[var(--border-divider)]"><td className="p-3">10.0.12.8 (Mentor B)</td><td className="p-3 text-green-500">0.0381</td><td className="p-3">2026-03-30T10:12Z</td></tr>
-                      <tr><td className="p-3 text-[var(--text-secondary)]">10.0.14.2 (Mentor C)</td><td className="p-3 text-[var(--text-secondary)] opacity-50">Pending</td><td className="p-3 text-[var(--text-secondary)]">--</td></tr>
-                  </tbody>
-              </table>
+              <div className="overflow-x-auto">
+                  <table className="w-full text-left font-mono text-sm">
+                      <thead className="bg-[var(--bg-secondary)]"><tr className="text-[var(--text-secondary)]"><th className="p-3">Edge Node IP</th><th className="p-3">Loss</th><th className="p-3">Version Timestamp</th></tr></thead>
+                      <tbody>
+                          <tr className="border-b border-[var(--border-divider)]"><td className="p-3">10.0.12.5 (Mentor A)</td><td className="p-3 text-green-500">0.0412</td><td className="p-3">2026-03-30T10:14Z</td></tr>
+                          <tr className="border-b border-[var(--border-divider)]"><td className="p-3">10.0.12.8 (Mentor B)</td><td className="p-3 text-green-500">0.0381</td><td className="p-3">2026-03-30T10:12Z</td></tr>
+                          <tr><td className="p-3 text-[var(--text-secondary)]">10.0.14.2 (Mentor C)</td><td className="p-3 text-[var(--text-secondary)] opacity-50">Pending</td><td className="p-3 text-[var(--text-secondary)]">--</td></tr>
+                      </tbody>
+                  </table>
+              </div>
           </div>
       </div>
   );
 
   return (
-      <div className="min-h-screen max-w-[1400px] mx-auto max-w-7xl p-4 md:p-8 relative">
+      <div className="min-h-screen  mx-auto max-w-7xl p-4 md:p-8 relative">
           {/* Header */}
           <div className="theme-panel w-full p-6 mb-6 flex justify-between items-center border-l-4 border-l-accent shadow-md">
              <div>
@@ -418,7 +420,7 @@ export default function AdminDashboard() {
 
           {/* Floating Warning / Success Banner */}
           {statusMsg.text && (
-              <div className={`fixed top-8 right-8 z-50 p-4 rounded-xl shadow-2xl transition-all flex items-center gap-3 animate-in slide-in-from-right-8 border ${statusMsg.type === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
+              <div className={`fixed top-4 left-4 right-4 sm:top-8 sm:right-8 sm:left-auto z-50 p-4 rounded-xl shadow-2xl transition-all flex items-center gap-3 animate-in slide-in-from-right-8 border w-full sm:w-auto max-w-sm ${statusMsg.type === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/30'}`}>
                   {statusMsg.type === 'error' ? <X size={20}/> : <Check size={20}/>}
                   <span className="font-bold">{statusMsg.text}</span>
               </div>
@@ -460,7 +462,7 @@ export default function AdminDashboard() {
                                <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
                                    <Edit className="text-blue-500" size={20} /> Edit Staff Profile
                                </h2>
-                               <div className="grid grid-cols-2 gap-4 mb-4">
+                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                    <div>
                                        <label className="text-xs text-[var(--text-secondary)] block mb-1">Full Name</label>
                                        <input type="text" value={editModal.data.fullName}
@@ -500,7 +502,7 @@ export default function AdminDashboard() {
                                            onChange={e => setEditModal({ ...editModal, data: { ...editModal.data, designation: e.target.value } })}
                                            className="theme-input" />
                                    </div>
-                                   <div className="col-span-2">
+                                   <div className="sm:col-span-2">
                                        <label className="text-xs text-[var(--text-secondary)] block mb-1">Phone</label>
                                        <input type="text" value={editModal.data.phone}
                                            onChange={e => setEditModal({ ...editModal, data: { ...editModal.data, phone: e.target.value } })}

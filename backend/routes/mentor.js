@@ -42,6 +42,10 @@ router.put('/tickets/:id', resolveTicket);
 
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+// Ensure uploads directory exists so multer never crashes with ENOENT
+fs.mkdirSync('uploads/materials/', { recursive: true });
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {

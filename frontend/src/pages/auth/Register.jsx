@@ -29,7 +29,7 @@ export default function Register() {
     setLoading(true);
     setError('');
     try {
-      await axios.post('http://localhost:2000/api/auth/send-otp', { email });
+      await axios.post('/api/auth/send-otp', { email });
       setSuccessMsg('OTP sent to your email! (Please check your Spam folder too)');
       setStep(2);
     } catch (err) {
@@ -45,7 +45,7 @@ export default function Register() {
     setError('');
     setSuccessMsg('');
     try {
-      const res = await axios.post('http://localhost:2000/api/auth/verify-otp', { email, otp });
+      const res = await axios.post('/api/auth/verify-otp', { email, otp });
       setRegistrationToken(res.data.registrationToken);
       setStep(3);
     } catch (err) {
@@ -67,7 +67,7 @@ export default function Register() {
         semester: Number(formData.semester)
       };
       
-      const res = await axios.post('http://localhost:2000/api/auth/register', payload);
+      const res = await axios.post('/api/auth/register', payload);
       localStorage.setItem('student', JSON.stringify(res.data));
       dispatch({ type: 'LOGIN', payload: res.data }); // Registration exclusively enforces student boundaries dynamically via backend arrays inherently.
       navigate('/dashboard/student');

@@ -10,81 +10,49 @@ const Material       = require('../models/sql/Material');
 const { sequelize }  = require('../sqlConnection');
 const { Op }         = require('sequelize');
 const jwt = require('jsonwebtoken');
-const validator = require('validator');
+// NOTE: 'validator' was only used by the legacy login function (commented out below)
+// const validator = require('validator');
 
+// ─── Token helpers ────────────────────────────────────────────────────────────────────
+// NOTE: This createToken is kept for backwards compatibility but the ACTIVE flow
+// uses authControllers.js createToken which includes { _id, role } in the payload.
+// This version now also includes role so studentGuard works correctly if ever re-enabled.
 const createToken = (id) => {
-    return jwt.sign({ _id: id }, process.env.SECRET, { expiresIn: '3d' });
+    return jwt.sign({ _id: id, role: 'student' }, process.env.SECRET, { expiresIn: '3d' });
 }
 
-exports.studentDetials = (req, res) => {
-    res.status(200).json({ msg: `Default page for student` });
-}
 
-exports.login = async (req, res) => {
-    let { email, password } = req.body;
+// ─── DEPRECATED LEGACY AUTH FUNCTIONS ───────────────────────────────────────────────────
+// These functions are NOT used by any active frontend page.
+// Active flow: Login.jsx -> /api/auth/login (returns role + fullName + isRegistered)
+//              Register.jsx -> /api/auth/register (OTP-verified)
+// ───────────────────────────────────────────────────────────────────────────────
 
-    if (!password || !email) {
-        return res.status(400).json({ msg: 'Fill all mandatory field' });
-    }
+// exports.studentDetials = (req, res) => {
+//     res.status(200).json({ msg: `Default page for student` });
+// }
 
-    if (!validator.isEmail(email)) {
-        return res.status(400).json({ error: "Invalid email" });
-    }
+// exports.login = async (req, res) => {
+//     // BUG: This returned only { email, token } - missing role, fullName, isRegistered
+//     // Use /api/auth/login (authControllers.js) instead - returns complete payload
+// };
 
-    try {
-        const existingUser = await Student.findOne({ where: { email } });
-        if (!existingUser) {
-            return res.status(400).json({ error: 'Email not registered' });
-        }
+// exports.isExist = async (req, res) => {
+//     // BUG: This was unprotected - allowed email enumeration
+//     // Can be re-enabled behind auth if needed
+// };
 
-        const student = await Student.login({ email, password });
-        const token = createToken(student.id);
+// exports.signup = async (req, res) => {
+//     // BUG: This returned only { email, token } - missing role, fullName, isRegistered
+//     // BUG: No OTP verification - anyone could register without verifying email
+//     // Use /api/auth/register (authControllers.js) instead
+// };
 
-        return res.status(200).json({ email, token });
-    } catch (error) {
-        return res.status(400).json({ error: error.message });
-    }
-}
+// exports.profile = async (req, res) => {
+//     // BUG: This was unprotected - exposed full student data to anyone with an email
+//     // Re-enable only after adding requireAuth middleware
+// };
 
-exports.isExist = async (req, res) => {
-    const { email } = req.body;
-    try {
-        if (!email) throw Error('Enter email properly..');
-        const existingUser = await Student.findOne({ where: { email } });
-        if (existingUser) throw Error('Email already registered');
-        return res.status(200).json({ msg: 'Email not registered' });
-    } catch (error) {
-        return res.status(400).json({ error: error.message });
-    }
-}
-
-exports.signup = async (req, res) => {
-    const { fullName, email, phone, password, gender, dob, enrollment, rollno, course, semester, state, district, area } = req.body;
-
-    try {
-        const newStudent = await Student.signup({
-            fullName, email, phone, password, gender, dob, enrollment, rollno, course, semester, state, district, area
-        });
-
-        const token = createToken(newStudent.id);
-
-        res.status(201).json({ email: newStudent.email, token });
-    } catch (error) {
-        res.status(500).json({ message: "Database error", error: error.message });
-    }
-};
-
-exports.profile = async (req, res) => {
-    const { email } = req.body;
-    try {
-        if (!email) throw Error("Invalid email");
-        const student = await Student.findOne({ where: { email } });
-        if (!student) throw Error("Student not registered");
-        return res.status(200).json({ student });
-    } catch (error) {
-        return res.status(400).json({ error: error.message });
-    }
-}
 
 // ─── 1. Academic Performance Data (All from SQL) ─────────────────────────────
 exports.getMyData = async (req, res) => {

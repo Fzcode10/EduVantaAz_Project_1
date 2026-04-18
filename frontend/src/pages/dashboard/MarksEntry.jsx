@@ -27,11 +27,11 @@ export default function MarksEntry() {
 
         console.log(sem);
         
-        const stuRes = await axios.get(`http://localhost:2000/api/mentor/students/${sem}`, config);
+        const stuRes = await axios.get(`/api/mentor/students/${sem}`, config);
         setStudents(stuRes.data);
         
    
-        const marksRes = await axios.get(`http://localhost:2000/api/mentor/marks/${subjectId}`, config);
+        const marksRes = await axios.get(`/api/mentor/marks/${subjectId}`, config);
         
         // 3. Map SQL array functionally into React State Matrix safely tied via Enrollment_Id validation natively
         const mapped = {};
@@ -90,7 +90,7 @@ export default function MarksEntry() {
 
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      await axios.post('http://localhost:2000/api/mentor/save-marks', {
+      await axios.post('/api/mentor/save-marks', {
         subject_id: subjectId,
         marksData
       }, config);

@@ -3,23 +3,24 @@ const express = require('express');
 const requireAuth = require('../middleware/auth');
 const router = express.Router();
 const {
-    studentDetials, login, signup, isExist, profile,
-    getMyData, getTargets, updateTargetProgress, logSession, 
+    // NOTE: studentDetials, login, signup, isExist, profile are commented out.
+    // The active Login.jsx and Register.jsx use /api/auth/* which returns
+    // the full payload (role, fullName, isRegistered). These old endpoints
+    // return incomplete payloads and are NOT used in the active UI flow.
+    getMyData, getTargets, updateTargetProgress, logSession,
     getActivityLogs, getRecommendations, getTickets, createTicket, getMaterials
 } = require('../controllers/studentControllers.js');
 
 
-router.get('/',  studentDetials);
+// ─── DEPRECATED (Not used by active frontend flow) ───────────────────────────
+// router.get('/',  studentDetials);    // Not used
+// router.post('/login', login);        // Use /api/auth/login instead (returns full payload)
+// router.post('/signup', signup);      // Use /api/auth/register instead (OTP-verified)
+// router.post('/isexist', isExist);    // Not used
+// router.post('/profile', profile);    // Not used (unprotected - security risk)
+// ─────────────────────────────────────────────────────────────────────────────
 
-router.post('/login', login);
-
-router.post('/signup', signup);
-
-router.post('/isexist', isExist);
-
-router.post('/profile', profile);
-
-// ─── Secure Ecosystem Endpoints ──────────────────────────────────────────────
+// ─── Secure Ecosystem Endpoints (require token + student role) ───────────────
 router.use(requireAuth);
 
 const studentGuard = (req, res, next) => {

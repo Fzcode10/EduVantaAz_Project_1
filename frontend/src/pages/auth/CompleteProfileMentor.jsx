@@ -10,7 +10,7 @@ export default function CompleteProfileMentor() {
     e.preventDefault();
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      await axios.put('http://localhost:2000/api/auth/complete-profile', formData, config);
+      await axios.put('/api/auth/complete-profile', formData, config);
       
       const updatedUser = { ...user, isRegistered: true };
       localStorage.setItem('student', JSON.stringify(updatedUser)); // Auth context relies on 'student' key generically in your implementation

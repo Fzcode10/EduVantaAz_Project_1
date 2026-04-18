@@ -183,7 +183,9 @@ exports.updateStudent = async (req, res) => {
         if (enrollment && enrollment !== existingStudent.enrollment) {
             const subjects = await Subject.findAll();
             for (let sub of subjects) {
-                const tableName = `marks_${sub.subjectId}`;
+                // Apply same sanitization as addSubject to ensure table name matches exactly
+                const safeName = sub.subjectId.replace(/[^a-z0-9]/gi, '_').toLowerCase().replace(/__+/g, '_');
+                const tableName = `marks_${safeName}`;
                 const [tableExists] = await sequelize.query(`SHOW TABLES LIKE '${tableName}'`);
                 if (tableExists.length > 0) {
                     await sequelize.query(
@@ -215,7 +217,9 @@ exports.migrateSemester = async (req, res) => {
         const subject = await Subject.findOne({ where: { subjectId } });
         if (!subject) return res.status(404).json({ error: 'Subject not found.' });
 
-        const tableName = `marks_${subjectId}`;
+        // Apply same sanitization used in addSubject to ensure table name matches exactly
+        const safeId = subjectId.replace(/[^a-z0-9]/gi, '_').toLowerCase().replace(/__+/g, '_');
+        const tableName = `marks_${safeId}`;
         const timestamp = new Date().toISOString().replace(/[-:T.]/g, '_').slice(0, 15);
         const archiveTableName = `${tableName}_archive_${timestamp}`;
 

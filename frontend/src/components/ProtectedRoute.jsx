@@ -1,4 +1,10 @@
-import { Navigate, Outlet } from 'react-router-dom';
+// ─── DUPLICATE — NOT IMPORTED ANYWHERE ───────────────────────────────────────
+// App.jsx imports ProtectedRoute from ./components/auth/ProtectedRoute (correct one).
+// This file (components/ProtectedRoute.jsx) is a leftover duplicate and is never used.
+// It can be safely deleted. Keeping it commented to avoid confusion.
+// ─────────────────────────────────────────────────────────────────────────────
+
+
 import { useContext } from 'react';
 import { AuthContext } from '../contextProvider/authContext';
 

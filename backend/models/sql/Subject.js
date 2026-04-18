@@ -7,7 +7,7 @@ const Subject = sequelize.define('Subject', {
     subjectId: { type: DataTypes.STRING, allowNull: false, unique: true, field: 'subject_id' },
     courseName: { type: DataTypes.STRING, allowNull: false, field: 'course_name' },
     semester: { type: DataTypes.INTEGER, allowNull: false },
-    year: { type: DataTypes.INTEGER, allowNull: false },
+    year: { type: DataTypes.STRING, allowNull: false },
     department: { type: DataTypes.STRING, allowNull: false }
 }, {
     tableName: 'subjects',
