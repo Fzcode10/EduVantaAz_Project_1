@@ -17,11 +17,14 @@ export const useProfile = () => {
       }
 
       const student = JSON.parse(storedStudent);
-      const email = student?.email;   // ✅ use directly
+      const email = student?.email;  
+      const token = student?.token;
 
       const response = await fetch("/api/student/profile", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+         },
         body: JSON.stringify({ email }),
       });
 

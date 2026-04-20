@@ -341,18 +341,18 @@ export default function StudentDashboard() {
                </div>
 
                {/* 5. Privacy & Activity Log Segment */}
-               <div className="theme-panel p-6 shadow-xl border-t-4 border-t-black dark:border-t-white bg-slate-100 dark:bg-stone-900 overflow-hidden relative">
+               <div className="theme-panel p-6 shadow-xl border-t-4 border-t-[var(--text-primary)] bg-[var(--bg-primary)] overflow-hidden relative">
                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 font-mono"><ShieldCheck /> Privacy Telemetry Log</h2>
                    <div className="h-48 overflow-y-auto space-y-2 font-mono text-xs pr-2">
                        {logs.length === 0 ? <p className="opacity-50 text-center mt-8">Establishing terminal root...</p> : logs.map(l => (
-                           <div key={l.id} className="flex gap-3 py-1 border-b border-black/10 dark:border-white/10">
+                           <div key={l.id} className="flex gap-3 py-1 border-b border-[var(--border-divider)]">
                                <span className="opacity-50 shrink-0">[{new Date(l.created_at).toLocaleTimeString()}]</span>
                                <span className={l.actionType.includes('STUDY') ? 'text-blue-500 font-bold' : l.actionType.includes('TARGET') ? 'text-teal-500' : ''}>{l.description}</span>
                            </div>
                        ))}
                    </div>
-                   <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-slate-100 dark:from-stone-900 to-transparent pointer-events-none"></div>
-                   <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-slate-100 dark:from-stone-900 to-transparent pointer-events-none"></div>
+                   <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-[var(--bg-primary)] to-transparent pointer-events-none"></div>
+                   <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-[var(--bg-primary)] to-transparent pointer-events-none"></div>
                </div>
 
            </div>

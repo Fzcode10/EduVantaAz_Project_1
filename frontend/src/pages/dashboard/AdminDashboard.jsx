@@ -413,7 +413,7 @@ export default function AdminDashboard() {
           {/* Header */}
           <div className="theme-panel w-full p-6 mb-6 flex justify-between items-center border-l-4 border-l-accent shadow-md">
              <div>
-                <h1 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3"><Shield className="text-accent" size={32} /> Omni-Admin Control</h1>
+                <h1 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3"><Shield className="text-accent" size={32} />Admin Control</h1>
                 <p className="mt-1 text-[var(--text-secondary)] text-sm">Clearance level {user?.role.toUpperCase()} • Server Connection Locked</p>
              </div>
           </div>

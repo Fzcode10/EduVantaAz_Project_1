@@ -3,12 +3,12 @@ const express = require('express');
 const requireAuth = require('../middleware/auth');
 const router = express.Router();
 const {
-    // NOTE: studentDetials, login, signup, isExist, profile are commented out.
+    // NOTE: studentDetials, login, signup, isExist are commented out.
     // The active Login.jsx and Register.jsx use /api/auth/* which returns
     // the full payload (role, fullName, isRegistered). These old endpoints
     // return incomplete payloads and are NOT used in the active UI flow.
     getMyData, getTargets, updateTargetProgress, logSession,
-    getActivityLogs, getRecommendations, getTickets, createTicket, getMaterials
+    getActivityLogs, getRecommendations, getTickets, createTicket, getMaterials, profile
 } = require('../controllers/studentControllers.js');
 
 
@@ -17,7 +17,6 @@ const {
 // router.post('/login', login);        // Use /api/auth/login instead (returns full payload)
 // router.post('/signup', signup);      // Use /api/auth/register instead (OTP-verified)
 // router.post('/isexist', isExist);    // Not used
-// router.post('/profile', profile);    // Not used (unprotected - security risk)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── Secure Ecosystem Endpoints (require token + student role) ───────────────
@@ -33,6 +32,9 @@ router.use(studentGuard);
 
 // Academic Hub
 router.get('/my-data', getMyData);
+
+// Profile
+router.post('/profile', profile);
 
 // Targets
 router.get('/targets', getTargets);

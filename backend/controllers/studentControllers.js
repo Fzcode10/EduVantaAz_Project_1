@@ -48,10 +48,29 @@ const createToken = (id) => {
 //     // Use /api/auth/register (authControllers.js) instead
 // };
 
-// exports.profile = async (req, res) => {
-//     // BUG: This was unprotected - exposed full student data to anyone with an email
-//     // Re-enable only after adding requireAuth middleware
-// };
+exports.profile = async (req, res) => {
+    try {
+        const student = await Student.findByPk(req.user._id, {
+            attributes: [
+                'fullName',
+                'email',
+                'phone',
+                'gender',
+                'dob',
+                'enrollment',
+                'course',
+                'semester',
+                'state',
+                'district',
+                'area'
+            ]
+        });
+
+        if (!student) return res.status(404).json({ error: 'Identity not found.' });
+
+        res.status(200).json({ student });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+};
 
 
 // ─── 1. Academic Performance Data (All from SQL) ─────────────────────────────
